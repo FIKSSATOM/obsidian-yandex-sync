@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-yd-sync-manual",
+  "name": "Yandex Disk Sync",
+  "version": "1.1.0",
+  "minAppVersion": "0.15.0",
+  "description": "Плагин для Obsidian, обеспечивающий двустороннюю синхронизацию заметок и файлов хранилища с Яндекс.Диском. Поддерживает ручное и автоматическое управление, умное разрешение конфликтов и специальную \"Входящую\" папку.",
+  "author": "fiksatom",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}
