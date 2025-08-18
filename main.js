@@ -407,7 +407,7 @@ new import_obsidian.Notice("Файл логов очищен.");
 var DEFAULT_SETTINGS = {
 oauthToken: "",
 remoteFolderName: "Obsidian Sync",
-localSubfolder: "",
+vaultSubfolder: "", // НОВАЯ НАСТРОЙКА
 syncOnStart: false,
 syncOnExit: false,
 localManifest: {}
@@ -674,12 +674,10 @@ if (operations.length > 0) {
                         this.logger.warn(`Перемещение не удалось (404): исходный файл не найден. Это может быть нормально, если он уже был перемещен или удален. Путь: ${op.from}`);
                         this.logger.log(`Пробуем альтернативу: загрузить локальный файл в целевую папку, чтобы гарантировать консистентность.`);
                         
-                        // Извлекаем локальный путь из целевого удаленного пути
                         const localPathToUpload = op.to.substring(this.getRemoteBasePath().length + 1);
                         await this.uploadFile(localPathToUpload);
 
                     } else {
-                        // Если ошибка другая, то она действительно критическая
                         throw e;
                     }
                 }
@@ -758,13 +756,21 @@ await this.logger.flush();
 }
 
 getRemoteBasePath() {
-const remoteBase = this.settings.remoteFolderName.trim();
-const vaultName = this.app.vault.getName();
-const pathSegments = [remoteBase];
-if (remoteBase.toLowerCase() !== vaultName.toLowerCase()) {
-pathSegments.push(vaultName);
-}
-return pathSegments.join("/");
+    const remoteBase = this.settings.remoteFolderName.trim();
+    const vaultSubfolder = this.settings.vaultSubfolder?.trim();
+
+    if (vaultSubfolder) {
+        // Если пользователь указал имя подпапки, используем его
+        return `${remoteBase}/${vaultSubfolder}`;
+    } else {
+        // Старая логика: автоматически используем имя хранилища
+        const vaultName = this.app.vault.getName();
+        const pathSegments = [remoteBase];
+        if (remoteBase.toLowerCase() !== vaultName.toLowerCase()) {
+            pathSegments.push(vaultName);
+        }
+        return pathSegments.join("/");
+    }
 }
 
 getRemoteIncomingFolderPath() {
@@ -1078,8 +1084,8 @@ return folders;
 async ensureRemoteFolderExists() {
     this.createdRemoteFoldersInSession = new Set(); 
     const remoteBase = this.settings.remoteFolderName.trim();
-    const vaultName = this.app.vault.getName();
-    await this.createRemoteFolder(remoteBase);
+    // НЕ создаем здесь папку с именем хранилища, так как getRemoteBasePath теперь динамическая
+    await this.createRemoteFolder(remoteBase); 
     const vaultRemotePath = this.getRemoteBasePath();
     await this.createRemoteFolder(vaultRemotePath);
     const incomingRemotePath = this.getRemoteIncomingFolderPath();
@@ -1121,13 +1127,15 @@ return response;
 }
 
 calculateMD5(content) {
-if (typeof content !== 'string') {
-const spark = new import_spark_md5.default.ArrayBuffer();
-spark.append(content);
-return spark.end();
-}
-const normalizedContent = content.replace(/\r\n/g, "\n");
-return import_spark_md5.default.hash(normalizedContent);
+    if (typeof content !== 'string') {
+        // Это ArrayBuffer, его нужно обернуть в Uint8Array
+        const spark = new import_spark_md5.default.ArrayBuffer();
+        spark.append(new Uint8Array(content)); // <--- ВОТ ИСПРАВЛЕНИЕ
+        return spark.end();
+    }
+    // Это для строкового контента (хотя readBinary делает его редким)
+    const normalizedContent = content.replace(/\r\n/g, "\n");
+    return import_spark_md5.default.hash(normalizedContent);
 }
 
 promptFirstSync() {
@@ -1259,12 +1267,30 @@ this.plugin.settings.oauthToken = value.trim();
 await this.plugin.saveSettings();
 })
 );
-new import_obsidian.Setting(containerEl).setName("Корневая папка на Яндекс.Диске").setDesc("Укажите имя папки в корне вашего Диска. Каждое хранилище будет синхронизировано в свою подпапку внутри нее (если их имена не совпадают).").addText(
+new import_obsidian.Setting(containerEl).setName("Корневая папка на Яндекс.Диске").setDesc("Укажите имя папки в корне вашего Диска для всех синхронизаций.").addText(
 (text) => text.setPlaceholder("Например, Obsidian").setValue(this.plugin.settings.remoteFolderName).onChange(async (value) => {
 this.plugin.settings.remoteFolderName = value.trim().replace(/\/|\\/g, "");
 await this.plugin.saveSettings();
 })
 );
+
+// НОВАЯ НАСТРОЙКА В ИНТЕРФЕЙСЕ
+new import_obsidian.Setting(containerEl)
+    .setName("Имя подпапки для хранилища (опционально)")
+    .setDesc(
+        "Укажите здесь одинаковое имя на всех устройствах (ПК, телефон), чтобы синхронизировать одно и то же хранилище, даже если их локальные имена различаются. Если оставить пустым, будет автоматически использоваться имя хранилища."
+    )
+    .addText((text) =>
+        text
+            .setPlaceholder("Например, MyNotes")
+            .setValue(this.plugin.settings.vaultSubfolder)
+            .onChange(async (value) => {
+                this.plugin.settings.vaultSubfolder = value.trim().replace(/\/|\\/g, "");
+                await this.plugin.saveSettings();
+            })
+    );
+
+
 new import_obsidian.Setting(containerEl).setName("Синхронизировать при запуске").setDesc("Автоматически запускать синхронизацию через несколько секунд после старта Obsidian.").addToggle(
 (toggle) => toggle.setValue(this.plugin.settings.syncOnStart).onChange(async (value) => {
 this.plugin.settings.syncOnStart = value;
