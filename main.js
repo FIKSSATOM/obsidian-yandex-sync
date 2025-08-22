@@ -407,10 +407,10 @@ new import_obsidian.Notice("Файл логов очищен.");
 var DEFAULT_SETTINGS = {
 oauthToken: "",
 remoteFolderName: "Obsidian Sync",
-vaultSubfolder: "", // НОВАЯ НАСТРОЙКА
+vaultSubfolder: "",
 syncOnStart: false,
 syncOnExit: false,
-localManifest: {}
+localManifest: { files: {}, folders: [] } // НОВАЯ СТРУКТУРА
 };
 
 var YDSyncPlugin = class extends import_obsidian.Plugin {
@@ -466,14 +466,34 @@ this.logger.flush();
 }
 
 async loadSettings() {
-const loadedData = await this.loadData();
-this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
-if (loadedData && loadedData.lastSyncState) {
-this.settings.localManifest = loadedData.lastSyncState;
-delete this.settings.lastSyncState;
-await this.saveSettings();
-this.logger.log("Настройки мигрировали на новую структуру 'localManifest'.");
-}
+    const loadedData = await this.loadData();
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+
+    let migrated = false;
+
+    // Миграция 1: lastSyncState -> localManifest (очень старая версия)
+    if (loadedData && loadedData.lastSyncState) {
+        this.settings.localManifest = { files: loadedData.lastSyncState, folders: [] };
+        delete this.settings.lastSyncState;
+        this.logger.log("Настройки мигрировали со структуры 'lastSyncState' на новую.");
+        migrated = true;
+    }
+
+    // Миграция 2: плоский localManifest -> структурированный {files, folders}
+    if (this.settings.localManifest && !this.settings.localManifest.hasOwnProperty('files')) {
+         this.logger.log("Обнаружена старая структура манифеста. Выполняется миграция...");
+         const oldFiles = this.settings.localManifest;
+         this.settings.localManifest = {
+             files: oldFiles,
+             folders: [] // Папки будут полностью пересчитаны при следующей синхронизации
+         };
+         this.logger.log("Миграция на новую структуру 'localManifest: {files, folders}' завершена.");
+         migrated = true;
+    }
+
+    if (migrated) {
+        await this.saveSettings();
+    }
 }
 
 async saveSettings() {
@@ -499,53 +519,55 @@ this.logger.log("--- Начало сеанса синхронизации ---");
 try {
 await this.ensureRemoteFolderExists();
 
+// --- ЭТАП 1: СБОР СОСТОЯНИЙ ---
 this.logger.log("1. Получение состояний...");
 this.logger.group("Подготовка");
-let remoteManifest = await this.getRemoteManifest();
-const localManifest = this.settings.localManifest || {};
+let remoteFileManifest = await this.getRemoteManifest();
+const oldLocalFileManifest = this.settings.localManifest.files || {};
 const { files: currentLocalFiles, folders: currentLocalFolders } = await this.getLocalState();
 this.logger.groupEnd();
 
-if (remoteManifest === null) {
-this.logger.warn("Манифест на Диске не найден. Запуск сценария первой синхронизации.");
-const choice = await this.promptFirstSync();
-if (choice === "upload") {
-this.logger.log("Пользователь выбрал 'Загрузить на Диск'.");
-await this.performInitialUpload(currentLocalFiles, currentLocalFolders);
-} else {
-this.logger.warn("Синхронизация отменена пользователем.");
-throw new Error("Синхронизация отменена пользователем.");
-}
-new import_obsidian.Notice("Первоначальная синхронизация завершена.");
-this.syncInProgress = false;
-this.logger.log("--- Сеанс первоначальной синхронизации завершен ---");
-await this.logger.flush();
-return;
+// --- Сценарий первой синхронизации ---
+if (remoteFileManifest === null) {
+    this.logger.warn("Манифест на Диске не найден. Запуск сценария первой синхронизации.");
+    const choice = await this.promptFirstSync();
+    if (choice === "upload") {
+        this.logger.log("Пользователь выбрал 'Загрузить на Диск'.");
+        await this.performInitialUpload(currentLocalFiles, currentLocalFolders);
+    } else {
+        this.logger.warn("Синхронизация отменена пользователем.");
+        throw new Error("Синхронизация отменена пользователем.");
+    }
+    new import_obsidian.Notice("Первоначальная синхронизация завершена.");
+    this.syncInProgress = false;
+    this.logger.log("--- Сеанс первоначальной синхронизации завершен ---");
+    await this.logger.flush();
+    return;
 }
 
 const operations = [];
 const stats = { uploaded: 0, downloaded: 0, deletedRemote: 0, deletedLocal: 0, moved: 0, conflicts: 0, folderCreated: 0, folderDeleted: 0, incoming: 0 };
-let newManifest = { ...remoteManifest };
+let newFileManifest = { ...remoteFileManifest };
 let handledPaths = new Set();
 
-this.logger.log("2. Анализ изменений и планирование операций...");
-
+// --- ЭТАП 2: АНАЛИЗ И ПЛАНИРОВАНИЕ ФАЙЛОВЫХ ОПЕРАЦИЙ ---
+this.logger.log("2. Анализ изменений и планирование файловых операций...");
 this.logger.group("Поиск перемещенных/переименованных файлов");
 const localHashMap = new Map(Object.entries(currentLocalFiles).map(([path, md5]) => [md5, path]));
 const movedFiles = [];
-for (const oldPath in remoteManifest) {
+for (const oldPath in remoteFileManifest) {
     if (!currentLocalFiles[oldPath]) {
-        const md5 = remoteManifest[oldPath];
+        const md5 = remoteFileManifest[oldPath];
         if (localHashMap.has(md5)) {
             const newPath = localHashMap.get(md5);
-            if (!remoteManifest[newPath]) {
+            if (!remoteFileManifest[newPath]) {
                 this.logger.log(`[ПЕРЕМЕЩЕНИЕ] Обнаружено: ${oldPath} -> ${newPath}`);
                 const fromFullPath = `${this.getRemoteBasePath()}/${oldPath}`;
                 const toFullPath = `${this.getRemoteBasePath()}/${newPath}`;
                 movedFiles.push({ type: 'move_remote', from: fromFullPath, to: toFullPath, overwrite: false });
                 
-                delete newManifest[oldPath];
-                newManifest[newPath] = md5;
+                delete newFileManifest[oldPath];
+                newFileManifest[newPath] = md5;
                 handledPaths.add(oldPath).add(newPath);
                 stats.moved++;
             }
@@ -553,23 +575,21 @@ for (const oldPath in remoteManifest) {
     }
 }
 this.logger.groupEnd();
-
 operations.push(...movedFiles);
 
-
-await this.processIncomingFolder(currentLocalFiles, newManifest, operations, stats, handledPaths);
+await this.processIncomingFolder(currentLocalFiles, newFileManifest, operations, stats, handledPaths);
 
 const allPaths = new Set([
-...Object.keys(remoteManifest),
-...Object.keys(localManifest),
+...Object.keys(remoteFileManifest),
+...Object.keys(oldLocalFileManifest),
 ...Object.keys(currentLocalFiles)
 ]);
 
 for (const path of allPaths) {
     if (handledPaths.has(path)) continue;
 
-    const remoteHash = remoteManifest[path];
-    const localSavedHash = localManifest[path];
+    const remoteHash = remoteFileManifest[path];
+    const localSavedHash = oldLocalFileManifest[path];
     const currentLocalHash = currentLocalFiles[path];
 
     this.logger.group(`[Анализ] ${path}`);
@@ -585,7 +605,7 @@ for (const path of allPaths) {
             if (localChanged && !remoteChanged) {
                 this.logger.log("РЕШЕНИЕ: [ЗАГРУЗИТЬ] Файл изменен локально.");
                 operations.push({ type: 'upload', path, md5: currentLocalHash });
-                newManifest[path] = currentLocalHash;
+                newFileManifest[path] = currentLocalHash;
                 stats.uploaded++;
             } else if (!localChanged && remoteChanged) {
                 this.logger.log("РЕШЕНИЕ: [СКАЧАТЬ] Файл изменен на Диске.");
@@ -595,7 +615,7 @@ for (const path of allPaths) {
                 this.logger.error("РЕШЕНИЕ: [КОНФЛИКТ] Обнаружен конфликт версий.");
                 const conflictOp = await this.handleConflict(path, currentLocalHash, remoteHash);
                 operations.push(...conflictOp.operations);
-                Object.assign(newManifest, conflictOp.manifestUpdates);
+                Object.assign(newFileManifest, conflictOp.manifestUpdates);
                 stats.conflicts++;
             } else {
                 this.logger.warn("РЕШЕНИЕ: [СКАЧАТЬ] Неоднозначное состояние, приоритет у Диска.");
@@ -612,12 +632,12 @@ for (const path of allPaths) {
         else if (localSavedHash) {
             this.logger.log("РЕШЕНИЕ: [УДАЛИТЬ ЛОКАЛЬНО] Файл удален на Диске, удаляем локальную копию.");
             operations.push({ type: 'delete_local', path });
-            delete newManifest[path];
+            delete newFileManifest[path];
             stats.deletedLocal++;
         } else {
             this.logger.log("РЕШЕНИЕ: [ЗАГРУЗИТЬ] Новый локальный файл.");
             operations.push({ type: 'upload', path, md5: currentLocalHash });
-            newManifest[path] = currentLocalHash;
+            newFileManifest[path] = currentLocalHash;
             stats.uploaded++;
         }
     } else if (!currentLocalHash && remoteHash) {
@@ -628,21 +648,33 @@ for (const path of allPaths) {
         } else { 
             this.logger.log("РЕШЕНИЕ: [УДАЛИТЬ С ДИСКА] Файл удален локально.");
             operations.push({ type: 'delete_remote', path });
-            delete newManifest[path];
+            delete newFileManifest[path];
             stats.deletedRemote++;
         }
     } else if (!currentLocalHash && !remoteHash && localSavedHash) {
         this.logger.log(`РЕШЕНИЕ: [ОЧИСТИТЬ] Файл удален везде, удаляем запись из памяти.`);
-        delete newManifest[path];
+        delete newFileManifest[path];
     }
     this.logger.groupEnd();
 }
 
+// --- ЭТАП 3: УПРЕЖДАЮЩЕЕ СОЗДАНИЕ ПАПОК ---
+this.logger.log("3. Упреждающее создание удаленных папок...");
+const foldersToCreateRemotely = Array.from(currentLocalFolders);
+if (foldersToCreateRemotely.length > 0) {
+    foldersToCreateRemotely.sort((a, b) => a.length - b.length);
+    for (const folderPath of foldersToCreateRemotely) {
+        this.logger.log(`[Подготовка] Проверка/создание удаленной папки: ${folderPath}`);
+        await this.createRemoteFolder(`${this.getRemoteBasePath()}/${folderPath}`);
+    }
+} else {
+    this.logger.log("Локальных папок для создания на Диске нет.");
+}
 
-this.logger.log("3. Выполнение запланированных операций...");
+// --- ЭТАП 4: ВЫПОЛНЕНИЕ ФАЙЛОВЫХ ОПЕРАЦИЙ ---
+this.logger.log("4. Выполнение запланированных файловых операций...");
 if (operations.length > 0) {
     operations.sort((a, b) => {
-
         const getPriority = (op) => {
             if (op.type === 'download' && op.sourcePath) return 0; 
             if (op.type === 'move_remote' && op.overwrite) return 1; 
@@ -673,10 +705,8 @@ if (operations.length > 0) {
                     if (e.message && e.message.includes("404")) {
                         this.logger.warn(`Перемещение не удалось (404): исходный файл не найден. Это может быть нормально, если он уже был перемещен или удален. Путь: ${op.from}`);
                         this.logger.log(`Пробуем альтернативу: загрузить локальный файл в целевую папку, чтобы гарантировать консистентность.`);
-                        
                         const localPathToUpload = op.to.substring(this.getRemoteBasePath().length + 1);
                         await this.uploadFile(localPathToUpload);
-
                     } else {
                         throw e;
                     }
@@ -691,22 +721,10 @@ if (operations.length > 0) {
     this.logger.log("Нет файловых операций для выполнения.");
 }
 
-this.logger.log("4. Синхронизация структуры папок...");
-const { folders: finalLocalFolders } = await this.getLocalState();
-let remoteFolders = await this.getAllRemoteFolders();
-
-const foldersToCreateRemotely = [...finalLocalFolders].filter(f => !remoteFolders.has(f));
-if (foldersToCreateRemotely.length > 0) {
-    foldersToCreateRemotely.sort();
-    for (const localFolder of foldersToCreateRemotely) {
-        this.logger.log(`[Создать на Диске] Папка: ${localFolder}`);
-        await this.createRemoteFolder(`${this.getRemoteBasePath()}/${localFolder}`);
-        stats.folderCreated++;
-    }
-}
-
-remoteFolders = await this.getAllRemoteFolders();
-const foldersToDeleteRemotely = [...remoteFolders].filter(f => !finalLocalFolders.has(f));
+// --- ЭТАП 5: СИНХРОНИЗАЦИЯ УДАЛЕНИЯ ПАПОК ---
+this.logger.log("5. Синхронизация структуры папок (удаление)...");
+const allRemoteFolders = await this.getAllRemoteFolders();
+const foldersToDeleteRemotely = [...allRemoteFolders].filter(f => !currentLocalFolders.has(f));
 if (foldersToDeleteRemotely.length > 0) {
     foldersToDeleteRemotely.sort((a, b) => b.length - a.length);
     for (const remoteFolder of foldersToDeleteRemotely) {
@@ -716,10 +734,13 @@ if (foldersToDeleteRemotely.length > 0) {
     }
 }
 
-
-this.logger.log("5. Завершение и сохранение состояния...");
-await this.uploadRemoteManifest(newManifest);
-this.settings.localManifest = newManifest;
+// --- ЭТАП 6: ЗАВЕРШЕНИЕ И СОХРАНЕНИЕ СОСТОЯНИЯ ---
+this.logger.log("6. Завершение и сохранение состояния...");
+await this.uploadRemoteManifest(newFileManifest);
+this.settings.localManifest = {
+    files: newFileManifest,
+    folders: Array.from(currentLocalFolders)
+};
 await this.saveSettings();
 
 if (this.isNewDevice) {
@@ -732,8 +753,7 @@ if (this.isNewDevice) {
     }
 }
 
-
-const hasChanges = operations.length > 0 || stats.folderCreated > 0 || stats.folderDeleted > 0;
+const hasChanges = operations.length > 0 || stats.folderDeleted > 0;
 if (!isQuitting) {
 if (hasChanges) {
 new import_obsidian.Notice("YD Sync: Готово", 3e3);
@@ -760,10 +780,8 @@ getRemoteBasePath() {
     const vaultSubfolder = this.settings.vaultSubfolder?.trim();
 
     if (vaultSubfolder) {
-        // Если пользователь указал имя подпапки, используем его
         return `${remoteBase}/${vaultSubfolder}`;
     } else {
-        // Старая логика: автоматически используем имя хранилища
         const vaultName = this.app.vault.getName();
         const pathSegments = [remoteBase];
         if (remoteBase.toLowerCase() !== vaultName.toLowerCase()) {
@@ -860,6 +878,7 @@ const remotePath = `${this.getRemoteBasePath()}/${path}`;
 
 const parentDir = path.substring(0, path.lastIndexOf("/"));
 if (parentDir) {
+    // Создание папки уже выполнено на этапе 3, но оставим на всякий случай
     await this.createRemoteFolder(`${this.getRemoteBasePath()}/${parentDir}`);
 }
 
@@ -945,7 +964,7 @@ async moveRemoteFile(sourceRemotePath, destinationRemotePath, overwrite = false)
     } catch (e) {
         this.logger.error(`Failed to move remote file ${sourceRemotePath} to ${destinationRemotePath}:`, e);
         if (e.message.includes("409")) {
-            this.logger.warn(`Conflict when moving remote file: ${sourceRemotePath}. File likely already exists at destination.`);
+            this.logger.warn(`Conflict when moving remote file: ${sourceRemotePath}. File likely already exists at destination or parent path does not exist.`);
         }
         throw e;
     }
@@ -985,12 +1004,21 @@ manifestUpdates: {
 
 async performInitialUpload(localFiles, localFolders) {
 new import_obsidian.Notice(`Первоначальная загрузка: ${Object.keys(localFiles).length} файлов и ${localFolders.size} папок...`);
+
+const foldersToCreate = Array.from(localFolders);
+foldersToCreate.sort((a,b) => a.length - b.length);
+for (const folder of foldersToCreate) {
+    await this.createRemoteFolder(`${this.getRemoteBasePath()}/${folder}`);
+}
+
 const uploadPromises = Object.keys(localFiles).map(path => this.uploadFile(path));
 await Promise.all(uploadPromises);
 
-const initialManifest = { ...localFiles };
-await this.uploadRemoteManifest(initialManifest);
-this.settings.localManifest = initialManifest;
+await this.uploadRemoteManifest(localFiles);
+this.settings.localManifest = {
+    files: localFiles,
+    folders: Array.from(localFolders)
+};
 await this.saveSettings();
 
 try {
@@ -1084,7 +1112,6 @@ return folders;
 async ensureRemoteFolderExists() {
     this.createdRemoteFoldersInSession = new Set(); 
     const remoteBase = this.settings.remoteFolderName.trim();
-    // НЕ создаем здесь папку с именем хранилища, так как getRemoteBasePath теперь динамическая
     await this.createRemoteFolder(remoteBase); 
     const vaultRemotePath = this.getRemoteBasePath();
     await this.createRemoteFolder(vaultRemotePath);
@@ -1128,12 +1155,10 @@ return response;
 
 calculateMD5(content) {
     if (typeof content !== 'string') {
-        // Это ArrayBuffer, его нужно обернуть в Uint8Array
         const spark = new import_spark_md5.default.ArrayBuffer();
-        spark.append(new Uint8Array(content)); // <--- ВОТ ИСПРАВЛЕНИЕ
+        spark.append(new Uint8Array(content));
         return spark.end();
     }
-    // Это для строкового контента (хотя readBinary делает его редким)
     const normalizedContent = content.replace(/\r\n/g, "\n");
     return import_spark_md5.default.hash(normalizedContent);
 }
@@ -1274,7 +1299,6 @@ await this.plugin.saveSettings();
 })
 );
 
-// НОВАЯ НАСТРОЙКА В ИНТЕРФЕЙСЕ
 new import_obsidian.Setting(containerEl)
     .setName("Имя подпапки для хранилища (опционально)")
     .setDesc(
@@ -1308,7 +1332,7 @@ button.setButtonText("Сбросить локальное состояние").s
     } catch(e) {
         new import_obsidian.Notice("Не удалось сбросить флаг инициализации.", 5000);
     }
-    this.plugin.settings.localManifest = {};
+    this.plugin.settings.localManifest = { files: {}, folders: [] };
     await this.plugin.saveSettings();
     new import_obsidian.Notice("Локальное состояние синхронизации сброшено.");
 });
