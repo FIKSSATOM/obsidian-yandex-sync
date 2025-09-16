@@ -1,1394 +1,1464 @@
-// НАЧАЛО КОДА main.js
+// --- НАЧАЛО ФАЙЛА main.js ---
+const { Plugin, Notice, Modal, Setting, requestUrl, PluginSettingTab, TFile, TFolder } = require('obsidian');
 
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __commonJS = (cb, mod) => function __require() {
-return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-};
-var __export = (target, all) => {
-for (var name in all)
-__defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-if (from && typeof from === "object" || typeof from === "function") {
-for (let key of __getOwnPropNames(from))
-if (!__hasOwnProp.call(to, key) && key !== except)
-__defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-}
-return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target, mod));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+const PLUGIN_ID = 'yandex-disk-sync';
+const API_BASE = 'https://cloud-api.yandex.net/v1/disk';
 
-var require_spark_md5 = __commonJS({
-"node_modules/spark-md5/spark-md5.js"(exports, module) {
-(function(factory) {
-if (typeof exports === "object") {
-module.exports = factory();
-} else if (typeof define === "function" && define.amd) {
-define(factory);
-} else {
-var glob;
-try {
-glob = window;
-} catch (e) {
-glob = self;
-}
-glob.SparkMD5 = factory();
-}
-})(function() {
-"use strict";
-var add32 = function(a, b) {
-return a + b & 4294967295;
-}, hex_chr = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
-function cmn(q, a, b, x, s, t) {
-a = add32(add32(a, q), add32(x, t));
-return add32(a << s | a >>> 32 - s, b);
-}
-function ff(a, b, c, d, x, s, t) {
-return cmn(b & c | ~b & d, a, b, x, s, t);
-}
-function gg(a, b, c, d, x, s, t) {
-return cmn(b & d | c & ~d, a, b, x, s, t);
-}
-function hh(a, b, c, d, x, s, t) {
-return cmn(b ^ c ^ d, a, b, x, s, t);
-}
-function ii(a, b, c, d, x, s, t) {
-return cmn(c ^ (b | ~d), a, b, x, s, t);
-}
-function md5cycle(x, l) {
-var a = x[0], b = x[1], c = x[2], d = x[3];
-a = ff(a, b, c, d, l[0], 7, -680876936);
-d = ff(d, a, b, c, l[1], 12, -389564586);
-c = ff(c, d, a, b, l[2], 17, 606105819);
-b = ff(b, c, d, a, l[3], 22, -1044525330);
-a = ff(a, b, c, d, l[4], 7, -176418897);
-d = ff(d, a, b, c, l[5], 12, 1200080426);
-c = ff(c, d, a, b, l[6], 17, -1473231341);
-b = ff(b, c, d, a, l[7], 22, -45705983);
-a = ff(a, b, c, d, l[8], 7, 1770035416);
-d = ff(d, a, b, c, l[9], 12, -1958414417);
-c = ff(c, d, a, b, l[10], 17, -42063);
-b = ff(b, c, d, a, l[11], 22, -1990404162);
-a = ff(a, b, c, d, l[12], 7, 1804603682);
-d = ff(d, a, b, c, l[13], 12, -40341101);
-c = ff(c, d, a, b, l[14], 17, -1502002290);
-b = ff(b, c, d, a, l[15], 22, 1236535329);
-a = gg(a, b, c, d, l[1], 5, -165796510);
-d = gg(d, a, b, c, l[6], 9, -1069501632);
-c = gg(c, d, a, b, l[11], 14, 643717713);
-b = gg(b, c, d, a, l[0], 20, -373897302);
-a = gg(a, b, c, d, l[5], 5, -701558691);
-d = gg(d, a, b, c, l[10], 9, 38016083);
-c = gg(c, d, a, b, l[15], 14, -660478335);
-b = ff(b, c, d, a, l[4], 20, -405537848);
-a = gg(a, b, c, d, l[9], 5, 568446438);
-d = gg(d, a, b, c, l[14], 9, -1019803690);
-c = gg(c, d, a, b, l[3], 14, -187363961);
-b = gg(b, c, d, a, l[8], 20, 1163531501);
-a = gg(a, b, c, d, l[13], 5, -1444681467);
-d = gg(d, a, b, c, l[2], 9, -51403784);
-c = gg(c, d, a, b, l[7], 14, 1735328473);
-b = gg(b, c, d, a, l[12], 20, -1926607734);
-a = hh(a, b, c, d, l[5], 4, -378558);
-d = hh(d, a, b, c, l[8], 11, -2022574463);
-c = hh(c, d, a, b, l[11], 16, 1839030562);
-b = hh(b, c, d, a, l[14], 23, -35309556);
-a = hh(a, b, c, d, l[1], 4, -1530992060);
-d = hh(d, a, b, c, l[4], 11, 1272893353);
-c = hh(c, d, a, b, l[7], 16, -155497632);
-b = hh(b, c, d, a, l[10], 23, -1094730640);
-a = hh(a, b, c, d, l[13], 4, 681279174);
-d = hh(d, a, b, c, l[0], 11, -358537222);
-c = hh(c, d, a, b, l[3], 16, -722521979);
-b = hh(b, c, d, a, l[6], 23, 76029189);
-a = hh(a, b, c, d, l[9], 4, -640364487);
-d = hh(d, a, b, c, l[12], 11, -421815835);
-c = hh(c, d, a, b, l[15], 16, 530742520);
-b = hh(b, c, d, a, l[2], 23, -995338651);
-a = ii(a, b, c, d, l[0], 6, -198630844);
-d = ii(d, a, b, c, l[7], 10, 1126891415);
-c = ii(c, d, a, b, l[14], 15, -1416354905);
-b = ii(b, c, d, a, l[5], 21, -57434055);
-a = ii(a, b, c, d, l[12], 6, 1700485571);
-d = ii(d, a, b, c, l[3], 10, -1894986606);
-c = ii(c, d, a, b, l[10], 15, -1051523);
-b = ii(b, c, d, a, l[1], 21, -2054922799);
-a = ii(a, b, c, d, l[8], 6, 1873313359);
-d = ii(d, a, b, c, l[15], 10, -30611744);
-c = ii(c, d, a, b, l[6], 15, -1560198380);
-b = ii(b, c, d, a, l[13], 21, 1309151649);
-a = ii(a, b, c, d, l[4], 6, -145523070);
-d = ii(d, a, b, c, l[11], 10, -1120210379);
-c = ii(c, d, a, b, l[2], 15, 718787259);
-b = ii(b, c, d, a, l[9], 21, -343485551);
-x[0] = add32(a, x[0]);
-x[1] = add32(b, x[1]);
-x[2] = add32(c, x[2]);
-x[3] = add32(d, x[3]);
-}
-function md5blk(s) {
-var n, i, b = [];
-for (i = 0; i < 64; i += 4) {
-n = s.charCodeAt(i) << 24 | s.charCodeAt(i + 1) << 16 | s.charCodeAt(i + 2) << 8 | s.charCodeAt(i + 3);
-b[i >> 2] = n;
-}
-return b;
-}
-function md5blk_array(a) {
-var n, i, b = [];
-for (i = 0; i < 64; i += 4) {
-n = a[i] << 24 | a[i + 1] << 16 | a[i + 2] << 8 | a[i + 3];
-b[i >> 2] = n;
-}
-return b;
-}
-function rhex(n) {
-var s = "", t;
-for (t = 0; t < 4; t += 1) {
-s += hex_chr[n >> t * 8 + 4 & 15] + hex_chr[n >> t * 8 & 15];
-}
-return s;
-}
-function hex(x) {
-var i;
-for (i = 0; i < x.length; i += 1) {
-x[i] = rhex(x[i]);
-}
-return x.join("");
-}
-if (hex([1732584193, -271733879, -1732584194, 271733878]) !== "67452301efcdab8998badcfe10325476") {
-add32 = function(x, y) {
-var lsw = (x & 65535) + (y & 65535), msw = (x >> 16) + (y >> 16) + (lsw >> 16);
-return msw << 16 | lsw & 65535;
-};
-}
-function SparkMD5() {
-this.reset();
-}
-SparkMD5.prototype.append = function(s) {
-var nkey, tail, tmp;
-this.appendBinary(s);
-nkey = this.raw === true ? this.x.length - 16 : 0;
-tail = this.x[nkey];
-tmp = tail.length;
-if (tmp < 16) {
-this.x[nkey] = tail.concat(Array(16 - tmp).join(String.fromCharCode(0)));
-}
-return this;
-};
-SparkMD5.prototype.appendBinary = function(s) {
-var n, l, i, j, t;
-l = s.length;
-n = this.x.length - 16;
-for (i = 0; i < l; i += 1) {
-j = n + (i >> 2);
-t = (i & 3) << 3;
-if (j >= this.x.length) {
-j = this.x.push([0, 0, 0, 0]) - 1;
-n = j;
-}
-this.x[j][t >> 5] |= s.charCodeAt(i) << 24 - t;
-}
-this.l = add32(this.l, l * 8);
-return this;
-};
-SparkMD5.prototype.end = function(raw) {
-var i, n, l, p, x, tail, tmpl, h, pad, nkey;
-l = this.l;
-nkey = this.x.length - 16;
-p = nkey << 4;
-x = this.x;
-n = l & 63;
-pad = n < 56 ? 56 - n : 120 - n;
-tail = p + n;
-tmpl = (tail >> 2) + 1;
-p = (tail & 3) << 3;
-if (tmpl > 16) {
-x.push([0, 0, 0, 0]);
-tmpl -= 16;
-}
-x[nkey][tmpl - 1] |= 128 << 24 - p;
-if (this.raw === true) {
-x[nkey][14] = l;
-x[nkey][15] = 0;
-} else {
-x[nkey][14] = l[1];
-x[nkey][15] = l[0];
-}
-h = hex(this.h);
-if (raw) {
-return h;
-}
-return h.split("").reverse().join("");
-};
-SparkMD5.prototype.reset = function() {
-this.x = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
-this.l = [0, 0];
-this.h = [1732584193, -271733879, -1732584194, 271733878];
-return this;
-};
-SparkMD5.prototype.getState = function() {
-return {
-x: this.x,
-l: this.l,
-h: this.h
-};
-};
-SparkMD5.prototype.setState = function(state) {
-this.x = state.x;
-this.l = state.l;
-this.h = state.h;
-return this;
-};
-SparkMD5.prototype.destroy = function() {
-delete this.x;
-delete this.l;
-delete this.h;
-};
-SparkMD5.hash = function(s, raw) {
-return SparkMD5.hashBinary(s, raw);
-};
-SparkMD5.hashBinary = function(s, raw) {
-var hash, i, x = [], l = s.length, n = l * 8;
-for (i = 0; i < l; i += 1) {
-x[i >> 2] |= (s.charCodeAt(i) & 255) << (i % 4 << 3);
-}
-x[n >> 5] |= 128 << (n & 31);
-x[(n + 64 >>> 9 << 4) + 14] = n;
-hash = [1732584193, -271733879, -1732584194, 271733878];
-l = (n + 64 >>> 9 << 4) + 16;
-for (i = 0; i < l; i += 16) {
-md5cycle(hash, x.slice(i, i + 16));
-}
-if (raw) {
-return hash;
-}
-return hex(hash);
-};
-SparkMD5.ArrayBuffer = function() {
-this.reset();
-};
-SparkMD5.ArrayBuffer.prototype.append = function(arr) {
-var l = arr.length, n = this.buff.length, i;
-this.buff = this.buff.concat(Array.prototype.slice.call(arr));
-this.length += l;
-for (i = 0; i + 63 < this.buff.length; i += 64) {
-md5cycle(this.h, md5blk_array(this.buff.slice(i, i + 64)));
-}
-this.buff = this.buff.slice(i);
-return this;
-};
-SparkMD5.ArrayBuffer.prototype.end = function(raw) {
-var buff = this.buff, length = this.length, h = this.h, i, p, tail;
-p = buff.length;
-buff[p] = 128;
-for (i = p + 1; i < 64; i += 1) {
-buff[i] = 0;
-}
-tail = md5blk_array(buff);
-if (p > 55) {
-md5cycle(h, tail);
-for (i = 0; i < 16; i += 1) {
-tail[i] = 0;
-}
-}
-tail[14] = length * 8;
-md5cycle(h, tail);
-return raw ? h : hex(h);
-};
-SparkMD5.ArrayBuffer.prototype.reset = function() {
-this.buff = [];
-this.length = 0;
-this.h = [1732584193, -271733879, -1732584194, 271733878];
-return this;
-};
-SparkMD5.ArrayBuffer.prototype.getState = function() {
-var state = SparkMD5.prototype.getState.call(this);
-state.buff = this.buff;
-state.length = this.length;
-return state;
-};
-SparkMD5.ArrayBuffer.prototype.setState = function(state) {
-SparkMD5.prototype.setState.call(this, state);
-this.buff = state.buff;
-this.length = state.length;
-return this;
-};
-SparkMD5.ArrayBuffer.prototype.destroy = SparkMD5.prototype.destroy;
-SparkMD5.ArrayBuffer.hash = function(arr, raw) {
-var hash = (new SparkMD5.ArrayBuffer()).append(arr).end(raw);
-return hash;
-};
-return SparkMD5;
-});
-}
-});
-
-var main_exports = {};
-__export(main_exports, {
-default: () => YDSyncPlugin
-});
-module.exports = __toCommonJS(main_exports);
-var import_obsidian = require("obsidian");
-var import_spark_md5 = __toESM(require_spark_md5());
-
-var LOG_FILE_NAME = "yd-sync.log";
-var MANIFEST_NAME = "yd-sync-manifest.json";
-var IGNORED_FILES = [LOG_FILE_NAME, MANIFEST_NAME];
-var MAX_LOG_SIZE = 1024 * 1024;
-var YANDEX_API_BASE_URL = "https://cloud-api.yandex.net/v1/disk";
-var INCOMING_FOLDER_NAME = "Incoming"; 
-var DEVICE_INITIALIZED_KEY = "yd-sync-initialized-v2";
-
-var FileLogger = class {
-constructor(app, logPath) {
-this.app = app;
-this.logPath = logPath;
-this.logQueue = [];
-this.groupLevel = 0;
-}
-getTimestamp() {
-const d = new Date();
-return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
-}
-formatMessage(level, message) {
-const indent = "  ".repeat(this.groupLevel);
-return `[${this.getTimestamp()}] [${level}]${indent} ${message}`;
-}
-log(message) {
-this.logQueue.push(this.formatMessage("INFO", message));
-console.log(message);
-}
-warn(message) {
-this.logQueue.push(this.formatMessage("WARN", message));
-console.warn(message);
-}
-error(message, ...optionalParams) {
-const fullMessage = [message, ...optionalParams].join(" ");
-this.logQueue.push(this.formatMessage("ERROR", fullMessage));
-console.error(message, ...optionalParams);
-}
-group(label) {
-this.logQueue.push(this.formatMessage("GROUP", label));
-console.group(label);
-this.groupLevel++;
-}
-groupEnd() {
-this.groupLevel = Math.max(0, this.groupLevel - 1);
-console.groupEnd();
-}
-async flush() {
-if (this.logQueue.length === 0)
-return;
-const logFile = this.app.vault.getAbstractFileByPath(this.logPath);
-let existingContent = "";
-if (logFile instanceof import_obsidian.TFile) {
-existingContent = await this.app.vault.read(logFile);
-}
-const newContent = this.logQueue.join("\n") + "\n" + existingContent;
-const trimmedContent = newContent.length > MAX_LOG_SIZE ? newContent.substring(0, MAX_LOG_SIZE) : newContent;
-if (logFile instanceof import_obsidian.TFile) {
-await this.app.vault.modify(logFile, trimmedContent);
-} else {
-await this.app.vault.create(this.logPath, trimmedContent);
-}
-this.logQueue = [];
-}
-async clear() {
-await this.app.vault.adapter.write(this.logPath, "");
-new import_obsidian.Notice("Файл логов очищен.");
-}
+// Словарь для описаний полей
+const I18N = {
+  en: { // Сохраняем английский для полноты, хотя он не будет использоваться
+    'desc.clientId': 'Yandex OAuth Client ID (required for Connect)',
+    'desc.accessToken': 'Paste token manually or use Connect below. Stored in plugin data.',
+    'desc.oauthControls': 'Connect: open OAuth in a browser and paste the token; Disconnect: remove the locally stored token; Manage on Yandex: open the OAuth portal to manage your application/tokens.',
+    'desc.oauthBaseUrl': 'Used for authorization and portal links',
+    'desc.oauthScopes': 'Leave empty to use scopes configured for your Yandex app. For app-folder only, keep this empty to avoid invalid_scope.',
+    'desc.remoteBase': "Root path on Yandex.Disk. For app-folder tokens, use 'app:/' (recommended). The vault will sync to a subfolder under this path.",
+    'desc.vaultFolderName': 'Subfolder under remote base where this vault is stored (only the folder name). Default: current vault name',
+    'desc.localScope': 'Relative path within the vault to sync (empty = entire vault)',
+    'desc.ignorePatterns': 'Comma-separated globs (e.g., .obsidian/**, **/.trash/**)',
+    'desc.syncMode': 'Sync direction: two-way, upload (local → cloud), download (cloud → local). Deletions follow the delete policy.',
+    'desc.deletePolicy': 'Controls deletions. mirror: propagate deletions on both sides based on the last sync index (only if the other side has not changed). skip: never delete automatically. Start with skip for safety; use mirror for full mirroring.',
+    'desc.strategy': 'How to resolve concurrent changes: newest-wins uses timestamps (overwrites the older side; within tolerance, prefers local); duplicate-both creates two local copies ("... (conflict ... local)" and "... (conflict ... remote)").',
+    'desc.tolerance': 'Time buffer for newest-wins. If local vs cloud modified times differ by less than this many seconds, treat them as equal and prefer the local version.',
+    'desc.autoSync': 'Minutes between automatic syncs. 0 disables. Runs only while Obsidian is open. Typical: 5–30 min.',
+    'desc.syncOnStartup': 'Run a sync automatically when Obsidian starts (after UI is ready).',
+    'desc.syncNow': 'Run sync with current settings (mode, deletes, filters)',
+    'desc.dryRun': 'Preview the sync plan without making changes. Opens a diagnostics window with the list of planned operations.',
+    'desc.diagnostics': 'Open diagnostics: shows environment summary (paths, mode), last API check, last HTTP error, and recent logs. Set how many lines to show below.',
+    'desc.maxSize': 'Skip local files larger than this during uploads. Default: 200.',
+    'desc.concurrency': 'Parallel transfers (upload/download). High values may cause 429/409; recommended 1–3 / 1–4.',
+    'desc.syncOnStartupDelay': 'Delay before startup sync runs (seconds). 0 = no delay.',
+  },
+  ru: {
+    'desc.clientId': 'ID клиента Яндекс OAuth (нужен для подключения)',
+    'desc.accessToken': 'Вставьте токен вручную или используйте кнопку "Подключить". Токен хранится в данных плагина.',
+    'desc.oauthControls': 'Подключить: открыть OAuth в браузере и вставить токен; Отключить: удалить локально сохранённый токен; Управлять на Яндексе: открыть портал OAuth для управления приложением/токенами.',
+    'desc.oauthBaseUrl': 'Используется для авторизации и ссылок на портал Яндекса',
+    'desc.oauthScopes': 'Оставьте пустым, чтобы использовать права, настроенные у вашего приложения. Для режима «папка приложения» это поле должно быть пустым, иначе возникнет ошибка invalid_scope.',
+    'desc.remoteBase': "Корневая папка на Яндекс.Диске. Для токенов с доступом к папке приложения используйте 'app:/' (рекомендуется). Хранилище будет синхронизироваться в подпапку внутри этого пути.",
+    'desc.vaultFolderName': 'Подпапка внутри удалённой базы для этого хранилища (только имя папки). По умолчанию — имя текущего хранилища.',
+    'desc.localScope': 'Относительный путь внутри хранилища для синхронизации (пусто = всё хранилище)',
+    'desc.ignorePatterns': 'Список шаблонов через запятую (например, .obsidian/**, **/.trash/**)',
+    'desc.syncMode': 'Направление синхронизации: двусторонняя, только загрузка (локально → облако), только скачивание (облако → локально).',
+    'desc.deletePolicy': 'Управляет удалением файлов. Зеркально: удалять файлы на другой стороне, если они были удалены локально/в облаке. Пропустить: никогда не удалять файлы автоматически.',
+    'desc.strategy': 'Как разрешать одновременные изменения: "Новейшее выигрывает" использует временные метки (перезаписывает старую версию); "Дублировать оба" создаёт две локальные копии: с постфиксом "(конфликт ... локально)" и "(конфликт ... удалённо)".',
+    'desc.tolerance': 'Допуск по времени для стратегии "Новейшее выигрывает". Если разница во времени изменения файлов меньше этого значения (в сек.), будет выбрана локальная версия.',
+    'desc.autoSync': 'Интервал (в минутах) между автосинхронизациями. 0 — выключено. Работает, только пока открыт Obsidian.',
+    'desc.syncOnStartup': 'Автоматически запускать синхронизацию при старте Obsidian.',
+    'desc.syncNow': 'Запустить синхронизацию с текущими настройками.',
+    'desc.dryRun': 'Показать лог синхронизации. Откроется окно диагностики со списком операций.',
+    'desc.diagnostics': 'Открыть окно диагностики: показывает сводку (пути, режим), результат последней проверки API и недавние записи журнала.',
+    'desc.maxSize': 'Пропускать при загрузке локальные файлы, размер которых превышает это значение (в МБ). По умолчанию: 200.',
+    'desc.concurrency': 'Количество параллельных операций (загрузка/скачивание). Высокие значения могут вызвать ошибки; рекомендуется 1–4.',
+    'desc.syncOnStartupDelay': 'Задержка перед запуском синхронизации при старте (в секундах). 0 = без задержки.',
+  },
 };
 
-var DEFAULT_SETTINGS = {
-oauthToken: "",
-remoteFolderName: "Obsidian Sync",
-vaultSubfolder: "",
-syncOnStart: false,
-syncOnExit: false,
-localManifest: { files: {}, folders: [] }
+const DEFAULT_SETTINGS = {
+  clientId: '',
+  accessToken: '',
+  oauthBaseUrl: 'https://oauth.yandex.ru',
+  oauthScopes: '',
+  localBasePath: '',
+  remoteBasePath: 'app:/',
+  ignorePatterns: ['.obsidian/**', '**/.trash/**'],
+  binaryExtensions: ['png', 'jpg', 'jpeg', 'gif', 'pdf', 'zip'],
+  excludeExtensions: [],
+  maxSizeMB: 200,
+  syncMode: 'two-way',
+  deletePolicy: 'mirror',
+  uploadConcurrency: 2,
+  downloadConcurrency: 2,
+  autoSyncIntervalMin: 0,
+  logLimit: 500,
+  diagnosticsLines: 50,
+  timeSkewToleranceSec: 180,
+  conflictStrategy: 'newest-wins',
+  showStatusBar: true,
+  progressLines: 25,
+  vaultFolderName: '',
+  _autoVaultNameApplied: false,
+  syncOnStartup: false,
+  syncOnStartupDelaySec: 3,
+  lang: 'ru',
 };
 
-var YDSyncPlugin = class extends import_obsidian.Plugin {
-constructor() {
-super(...arguments);
-this.syncInProgress = false;
-this.isNewDevice = false;
-this.handleQuit = async (task) => {
-if (this.settings.syncOnExit && !this.syncInProgress) {
-await this.runSync(true);
-}
-};
+// ... (остальной код до YandexDiskSyncSettingTab без изменений)
+function nowIso() {
+  return new Date().toISOString();
 }
 
-async onload() {
-console.log('Загрузка плагина "Yandex.Disk Sync"');
-this.logger = new FileLogger(this.app, LOG_FILE_NAME);
-
-try {
-    const initialized = window.localStorage.getItem(DEVICE_INITIALIZED_KEY);
-    this.isNewDevice = !initialized;
-    if (this.isNewDevice) {
-        this.logger.log("Обнаружено новое устройство или сброс состояния. Синхронизация будет работать в режиме 'только скачивание' до первого успеха.");
-    }
-} catch (e) {
-    this.logger.warn("Не удалось получить доступ к localStorage, работаем в стандартном режиме.");
-    this.isNewDevice = false;
+function delay(ms) {
+  return new Promise((res) => setTimeout(res, ms));
 }
 
-await this.loadSettings();
-this.addRibbonIcon("sync", "YD Sync: Синхронизировать", async () => {
-this.runSync(false);
-});
-this.addSettingTab(new YDSyncSettingTab(this.app, this));
-this.app.workspace.on("quit", this.handleQuit);
-
-this.app.workspace.onLayoutReady(() => {
-    if (this.settings.syncOnStart) {
-        this.logger.log("Планирование синхронизации при запуске...");
-        setTimeout(() => {
-            this.runSync(false);
-        }, 5000);
-    }
-});
+// Convert a simple glob (supports **, *, ?) to RegExp. Escapes regex meta as needed.
+function globToRegExp(glob) {
+  const reStr = '^' + glob
+    .replace(/[.+^${}()|\[\]\\]/g, '\\$&')
+    .replace(/\*\*/g, '::DOUBLE_STAR::')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\?/g, '[^/]')
+    .replace(/::DOUBLE_STAR::/g, '.*') + '$';
+  return new RegExp(reStr);
 }
 
-onunload() {
-console.log('Выгрузка плагина "Yandex.Disk Sync"');
-this.app.workspace.off("quit", this.handleQuit);
-if (this.logger) {
-this.logger.flush();
-}
+function pathJoin(...parts) {
+  return parts.filter(Boolean).join('/').replace(/\\/g, '/');
 }
 
-async loadSettings() {
-    const loadedData = await this.loadData();
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
-
-    let migrated = false;
-
-    if (loadedData && loadedData.lastSyncState) {
-        this.settings.localManifest = { files: loadedData.lastSyncState, folders: [] };
-        delete this.settings.lastSyncState;
-        this.logger.log("Настройки мигрировали со структуры 'lastSyncState' на новую.");
-        migrated = true;
-    }
-
-    if (this.settings.localManifest && !this.settings.localManifest.hasOwnProperty('files')) {
-         this.logger.log("Обнаружена старая структура манифеста. Выполняется миграция...");
-         const oldFiles = this.settings.localManifest;
-         this.settings.localManifest = {
-             files: oldFiles,
-             folders: []
-         };
-         this.logger.log("Миграция на новую структуру 'localManifest: {files, folders}' завершена.");
-         migrated = true;
-    }
-
-    if (migrated) {
-        await this.saveSettings();
-    }
+function getExt(name) {
+  const i = name.lastIndexOf('.');
+  return i === -1 ? '' : name.slice(i + 1).toLowerCase();
 }
 
-async saveSettings() {
-await this.saveData(this.settings);
+function normalizeRelPath(rel) {
+  return rel.replace(/^\/+/, '').replace(/\\/g, '/');
 }
 
-async runSync(isQuitting = false) {
-if (this.syncInProgress) {
-new import_obsidian.Notice("Синхронизация уже выполняется.");
-return;
-}
-if (!this.settings.oauthToken || !this.settings.remoteFolderName) {
-new import_obsidian.Notice("Ошибка: Укажите OAuth-токен и имя папки на Диске в настройках.", 1e4);
-return;
-}
+class DiagnosticsModal extends Modal {
+  constructor(app, text) {
+    super(app);
+    this.text = text;
+  }
+  setText(text) {
+    this.text = text || '';
+    if (this.preEl) this.preEl.setText(this.text);
+  }
+  onOpen() {
+    const { contentEl, modalEl, titleEl } = this;
+    contentEl.empty();
 
-this.syncInProgress = true;
-if (!isQuitting) {
-new import_obsidian.Notice("YD Sync: Старт", 2e3);
-}
-this.logger.log("--- Начало сеанса синхронизации ---");
+    // Title in the modal header
+    titleEl.setText('Yandex Disk Sync — Диагностика');
 
-try {
-await this.ensureRemoteFolderExists();
+    // Make modal resizable (user can drag edges/corner)
+    modalEl.style.width = '70vw';
+    modalEl.style.height = '70vh';
+    modalEl.style.maxWidth = '90vw';
+    modalEl.style.maxHeight = '90vh';
+    modalEl.style.minWidth = '400px';
+    modalEl.style.minHeight = '200px';
+    modalEl.style.resize = 'both';
+    modalEl.style.overflow = 'hidden';
+    modalEl.style.display = 'flex';
+    modalEl.style.flexDirection = 'column';
 
-// --- ЭТАП 1: СБОР СОСТОЯНИЙ ---
-this.logger.log("1. Получение состояний...");
-this.logger.group("Подготовка");
-let remoteFileManifest = await this.getRemoteManifest();
-const oldLocalFileManifest = this.settings.localManifest.files || {};
-const { files: currentLocalFiles, folders: currentLocalFolders } = await this.getLocalState();
-const allRemoteFolders = await this.getAllRemoteFolders();
-this.logger.groupEnd();
+    // Let content fill available space and scroll as needed
+    contentEl.style.display = 'flex';
+    contentEl.style.flex = '1 1 auto';
+    contentEl.style.minHeight = '0';
+    // Ensure text is selectable/copyable
+    modalEl.style.userSelect = 'text';
+    contentEl.style.userSelect = 'text';
+    // vendor-prefixed for wider Electron/WebKit support
+    modalEl.style.webkitUserSelect = 'text';
+    contentEl.style.webkitUserSelect = 'text';
 
-let syncMode = 'default';
-
-// --- Определение сценария синхронизации ---
-if (remoteFileManifest === null) {
-    this.logger.warn("Манифест на Диске не найден. Запуск сценария первой синхронизации.");
-    const choice = await this.promptFirstSync();
-    if (choice === "upload") {
-        this.logger.log("Пользователь выбрал 'Загрузить на Диск'.");
-        syncMode = 'first-upload';
-        remoteFileManifest = {}; 
-    } else {
-        this.logger.warn("Синхронизация отменена пользователем.");
-        throw new Error("Синхронизация отменена пользователем.");
-    }
-} else if (this.isNewDevice) {
-    this.logger.log("Обнаружено новое устройство, подключающееся к существующей синхронизации.");
-    const choice = await this.promptMergeSync();
-    if (choice === 'merge') {
-        syncMode = 'merge';
-        this.logger.log("Пользователь выбрал режим слияния.");
-    } else if (choice === 'download') {
-        syncMode = 'download-only';
-        this.logger.log("Пользователь выбрал режим 'только скачивание'.");
-    } else {
-        this.logger.warn("Синхронизация отменена пользователем.");
-        throw new Error("Синхронизация отменена пользователем.");
-    }
-}
-
-this.logger.log("[Подготовка] Поиск и создание недостающих локальных папок...");
-const foldersToCreateLocally = [...allRemoteFolders].filter(f => !currentLocalFolders.has(f));
-if (foldersToCreateLocally.length > 0) {
-    foldersToCreateLocally.sort((a, b) => a.length - b.length);
-    for (const folderPath of foldersToCreateLocally) {
-        this.logger.log(`  Создание локальной папки: ${folderPath}`);
-        await this.createLocalFolder(folderPath);
-        currentLocalFolders.add(folderPath);
-    }
-}
-
-
-const operations = [];
-const stats = { uploaded: 0, downloaded: 0, deletedRemote: 0, deletedLocal: 0, moved: 0, conflicts: 0, folderCreated: 0, folderDeleted: 0, incoming: 0 };
-let newFileManifest = { ...remoteFileManifest };
-let handledPaths = new Set();
-
-// --- ЭТАП 2: АНАЛИЗ И ПЛАНИРОВАНИЕ ФАЙЛОВЫХ ОПЕРАЦИЙ ---
-this.logger.log("2. Анализ изменений и планирование файловых операций...");
-this.logger.group("Поиск перемещенных/переименованных файлов");
-const localHashMap = new Map(Object.entries(currentLocalFiles).map(([path, md5]) => [md5, path]));
-const movedFiles = [];
-const moveTargets = new Set();
-// --- ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ: Логика поиска перемещений ---
-// Итерируемся по файлам, которые были известны на ПРОШЛОЙ синхронизации.
-for (const oldPath in oldLocalFileManifest) {
-    // 1. Файл был известен, но сейчас его нет локально
-    if (!currentLocalFiles[oldPath]) {
-        const md5 = oldLocalFileManifest[oldPath];
-        // 2. И при этом есть другой локальный файл с таким же хешем
-        if (localHashMap.has(md5)) {
-            const newPath = localHashMap.get(md5);
-            // 3. И этот новый файл не был известен в прошлый раз (т.е. он действительно новый)
-            //    и не является целью другого перемещения
-            if (!oldLocalFileManifest[newPath] && !moveTargets.has(newPath)) {
-                this.logger.log(`[ПЕРЕМЕЩЕНИЕ] Обнаружено: ${oldPath} -> ${newPath}`);
-                const fromFullPath = `${this.getRemoteBasePath()}/${oldPath}`;
-                const toFullPath = `${this.getRemoteBasePath()}/${newPath}`;
-                movedFiles.push({ type: 'move_remote', from: fromFullPath, to: toFullPath, overwrite: false });
-                
-                delete newFileManifest[oldPath];
-                newFileManifest[newPath] = md5;
-                handledPaths.add(oldPath).add(newPath);
-                moveTargets.add(newPath);
-                stats.moved++;
-            }
-        }
-    }
-}
-this.logger.groupEnd();
-operations.push(...movedFiles);
-
-await this.processIncomingFolder(currentLocalFiles, newFileManifest, operations, stats, handledPaths);
-
-const allPaths = new Set(
-    [
-        ...Object.keys(remoteFileManifest),
-        ...Object.keys(oldLocalFileManifest),
-        ...Object.keys(currentLocalFiles)
-    ].filter(p => !IGNORED_FILES.includes(p.split('/').pop()))
-);
-
-
-for (const path of allPaths) {
-    if (handledPaths.has(path)) continue;
-
-    const remoteHash = remoteFileManifest[path];
-    const localSavedHash = oldLocalFileManifest[path];
-    const currentLocalHash = currentLocalFiles[path];
-
-    this.logger.group(`[Анализ] ${path}`);
-    this.logger.log(`Состояния: remote=${remoteHash || 'no'}, localSaved=${localSavedHash || 'no'}, currentLocal=${currentLocalHash || 'no'}`);
-
-    if (currentLocalHash && remoteHash) {
-        if (currentLocalHash === remoteHash) {
-            this.logger.log("РЕШЕНИЕ: [ПРОПУСТИТЬ] Файлы идентичны.");
+    // Toolbar with actions (Copy All)
+    const toolbar = contentEl.createEl('div');
+    toolbar.style.display = 'flex';
+    toolbar.style.justifyContent = 'flex-end';
+    toolbar.style.gap = '8px';
+    toolbar.style.margin = '0 0 8px 0';
+    const copyBtn = toolbar.createEl('button', { text: 'Копировать всё' });
+    copyBtn.addEventListener('click', async () => {
+      const txt = this.text || '';
+      try {
+        if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText(txt);
         } else {
-            const remoteChanged = remoteHash !== localSavedHash;
-            const localChanged = currentLocalHash !== localSavedHash;
-
-            if (localChanged && !remoteChanged) {
-                this.logger.log("РЕШЕНИЕ: [ЗАГРУЗИТЬ] Файл изменен локально.");
-                operations.push({ type: 'upload', path, md5: currentLocalHash });
-                newFileManifest[path] = currentLocalHash;
-                stats.uploaded++;
-            } else if (!localChanged && remoteChanged) {
-                this.logger.log("РЕШЕНИЕ: [СКАЧАТЬ] Файл изменен на Диске.");
-                operations.push({ type: 'download', path, md5: remoteHash });
-                stats.downloaded++;
-            } else if (localChanged && remoteChanged) {
-                this.logger.error("РЕШЕНИЕ: [КОНФЛИКТ] Обнаружен конфликт версий.");
-                const conflictOp = await this.handleConflict(path, currentLocalHash, remoteHash);
-                operations.push(...conflictOp.operations);
-                Object.assign(newFileManifest, conflictOp.manifestUpdates);
-                stats.conflicts++;
-            } else {
-                this.logger.warn("РЕШЕНИЕ: [СКАЧАТЬ] Неоднозначное состояние, приоритет у Диска.");
-                operations.push({ type: 'download', path, md5: remoteHash });
-                stats.downloaded++;
-            }
+          // Fallback
+          const ta = document.createElement('textarea');
+          ta.value = txt;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
         }
-    } else if (currentLocalHash && !remoteHash) {
-        if (syncMode === 'first-upload' || syncMode === 'merge') {
-            this.logger.log(`РЕШЕНИЕ: [ЗАГРУЗИТЬ] Новый локальный файл в режиме '${syncMode}'.`);
-            operations.push({ type: 'upload', path, md5: currentLocalHash });
-            newFileManifest[path] = currentLocalHash;
-            stats.uploaded++;
-        } else if (syncMode === 'download-only') {
-            this.logger.log(`РЕШЕНИЕ: [УДАЛИТЬ ЛОКАЛЬНО] Файла нет на сервере, а устройство в режиме 'download-only'.`);
-            operations.push({ type: 'delete_local', path });
-            stats.deletedLocal++;
-        } else if (!localSavedHash) {
-            this.logger.log("РЕШЕНИЕ: [ЗАГРУЗИТЬ] Новый локальный файл.");
-            operations.push({ type: 'upload', path, md5: currentLocalHash });
-            newFileManifest[path] = currentLocalHash;
-            stats.uploaded++;
-        } else {
-            this.logger.log("РЕШЕНИЕ: [УДАЛИТЬ ЛОКАЛЬНО] Файл удален на Диске, удаляем локальную копию.");
-            operations.push({ type: 'delete_local', path });
-            delete newFileManifest[path];
-            stats.deletedLocal++;
-        }
-    } else if (!currentLocalHash && remoteHash) {
-        if (!localSavedHash) {
-             this.logger.log("РЕШЕНИЕ: [СКАЧАТЬ] Новый файл с Диска (или новое устройство).");
-             operations.push({ type: 'download', path, md5: remoteHash });
-             stats.downloaded++;
-        } else { 
-            this.logger.log("РЕШЕНИЕ: [УДАЛИТЬ С ДИСКА] Файл удален локально.");
-            operations.push({ type: 'delete_remote', path });
-            delete newFileManifest[path];
-            stats.deletedRemote++;
-        }
-    } else if (!currentLocalHash && !remoteHash && localSavedHash) {
-        this.logger.log(`РЕШЕНИЕ: [ОЧИСТИТЬ] Файл удален везде, удаляем запись из памяти.`);
-        delete newFileManifest[path];
-    }
-    this.logger.groupEnd();
-}
-
-
-// --- ЭТАП 3: УПРЕЖДАЮЩЕЕ СОЗДАНИЕ УДАЛЕННЫХ ПАПОК ---
-this.logger.log("3. Упреждающее создание удаленных папок...");
-const foldersToCreateRemotely = Array.from(currentLocalFolders);
-if (foldersToCreateRemotely.length > 0) {
-    foldersToCreateRemotely.sort((a, b) => a.length - b.length);
-    for (const folderPath of foldersToCreateRemotely) {
-        this.logger.log(`[Подготовка] Проверка/создание удаленной папки: ${folderPath}`);
-        await this.createRemoteFolder(`${this.getRemoteBasePath()}/${folderPath}`);
-    }
-} else {
-    this.logger.log("Локальных папок для создания на Диске нет.");
-}
-
-// --- ЭТАП 4: ВЫПОЛНЕНИЕ ФАЙЛОВЫХ ОПЕРАЦИЙ ---
-this.logger.log("4. Выполнение запланированных файловых операций...");
-if (operations.length > 0) {
-    operations.sort((a, b) => {
-        const getPriority = (op) => {
-            if (op.type === 'download' && op.sourcePath) return 0; 
-            if (op.type === 'move_remote' && op.overwrite) return 1; 
-            const order = { 'upload': 2, 'download': 2, 'move_remote': 2, 'rename_local_for_conflict': 2, 'delete_local': 3, 'delete_remote': 4 };
-            return order[op.type] || 99;
-        };
-        return getPriority(a) - getPriority(b);
+        new Notice('Диагностика скопирована в буфер обмена');
+      } catch (_) {
+        new Notice('Не удалось скопировать');
+      }
     });
 
-    for (const op of operations) {
-        switch (op.type) {
-            case 'upload':
-                await this.uploadFile(op.path);
-                break;
-            case 'download':
-                await this.downloadFile(op.path, op.md5, op.sourcePath);
-                break;
-            case 'delete_remote':
-                await this.deleteRemoteFile(op.path);
-                break;
-            case 'delete_local':
-                await this.deleteLocalFile(op.path);
-                break;
-            case 'move_remote':
-                try {
-                    await this.moveRemoteFile(op.from, op.to, op.overwrite);
-                } catch (e) {
-                    if (e.message && e.message.includes("404")) {
-                        this.logger.warn(`Перемещение не удалось (404): исходный файл не найден. Это может быть нормально, если он уже был перемещен или удален. Путь: ${op.from}`);
-                        this.logger.log(`Пробуем альтернативу: загрузить локальный файл в целевую папку, чтобы гарантировать консистентность.`);
-                        const localPathToUpload = op.to.substring(this.getRemoteBasePath().length + 1);
-                        await this.uploadFile(localPathToUpload);
-                    } else {
-                        throw e;
-                    }
-                }
-                break;
-            case 'rename_local_for_conflict':
-                await this.app.vault.rename(op.file, op.newPath);
-                break;
+    const pre = (this.preEl = contentEl.createEl('pre'));
+    pre.style.whiteSpace = 'pre-wrap';
+    pre.style.flex = '1 1 auto';
+    pre.style.width = '100%';
+    pre.style.margin = '0';
+    pre.style.overflow = 'auto';
+    pre.style.userSelect = 'text';
+    pre.style.webkitUserSelect = 'text';
+    pre.style.cursor = 'text';
+    pre.setText(this.text);
+  }
+}
+
+class ProgressModal extends Modal {
+  constructor(app, plugin) {
+    super(app);
+    this.plugin = plugin;
+    this._timer = null;
+  }
+  onOpen() {
+    const { contentEl, modalEl, titleEl } = this;
+    contentEl.empty();
+    titleEl.setText('Yandex Disk Sync — Прогресс');
+    modalEl.style.width = '60vw';
+    modalEl.style.height = '50vh';
+    modalEl.style.resize = 'both';
+    modalEl.style.display = 'flex';
+    modalEl.style.flexDirection = 'column';
+    contentEl.style.display = 'flex';
+    contentEl.style.flex = '1 1 auto';
+    contentEl.style.minHeight = '0';
+    // Make text selectable/copyable
+    modalEl.style.userSelect = 'text';
+    contentEl.style.userSelect = 'text';
+    modalEl.style.webkitUserSelect = 'text';
+    contentEl.style.webkitUserSelect = 'text';
+
+    // Left vertical toolbar
+    const toolbar = contentEl.createEl('div');
+    toolbar.style.display = 'flex';
+    toolbar.style.flexDirection = 'column';
+    toolbar.style.alignItems = 'stretch';
+    toolbar.style.gap = '8px';
+    toolbar.style.marginRight = '12px';
+    toolbar.style.minWidth = '180px';
+
+    const syncBtn = toolbar.createEl('button', { text: 'Синхронизировать' });
+    syncBtn.onclick = () => {
+      if (this.plugin.currentRun?.active) { new Notice('Синхронизация уже запущена'); return; }
+      this.plugin.syncNow(false);
+    };
+
+    const dryBtn = toolbar.createEl('button', { text: 'логи' });
+    dryBtn.onclick = () => {
+      if (this.plugin.currentRun?.active) { new Notice('Синхронизация уже запущена'); return; }
+      this.plugin.syncNow(true);
+    };
+
+    const copyBtn = toolbar.createEl('button', { text: 'Копировать всё' });
+    copyBtn.onclick = async () => {
+      const txt = this.plugin.getProgressSummary();
+      try {
+        if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText(txt);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = txt;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
         }
-    }
-} else {
-    this.logger.log("Нет файловых операций для выполнения.");
-}
+        new Notice('Прогресс скопирован в буфер обмена');
+      } catch (_) {
+        new Notice('Не удалось скопировать');
+      }
+    };
 
-// --- ЭТАП 5: СИНХРОНИЗАЦИЯ УДАЛЕНИЯ ПАПОК ---
-this.logger.log("5. Синхронизация структуры папок (удаление)...");
-const oldLocalKnownFolders = new Set(this.settings.localManifest.folders || []);
-const foldersToDeleteRemotely = [...oldLocalKnownFolders].filter(f => !currentLocalFolders.has(f));
+    const cancelBtn = toolbar.createEl('button', { text: 'Отмена' });
+    cancelBtn.onclick = () => this.plugin.cancelCurrentRun();
 
-if (foldersToDeleteRemotely.length > 0) {
-    foldersToDeleteRemotely.sort((a, b) => b.length - a.length);
-    for (const remoteFolder of foldersToDeleteRemotely) {
-        this.logger.log(`[Удалить с Диска] Папка: ${remoteFolder}`);
-        await this.deleteRemoteFolder(remoteFolder);
-        stats.folderDeleted++;
-    }
-}
+    const pre = (this.preEl = contentEl.createEl('pre'));
+    pre.style.whiteSpace = 'pre-wrap';
+    pre.style.flex = '1 1 auto';
+    pre.style.margin = '0';
+    pre.style.overflow = 'auto';
+    pre.style.userSelect = 'text';
+    pre.style.webkitUserSelect = 'text';
+    pre.style.cursor = 'text';
 
-
-// --- ЭТАП 6: ЗАВЕРШЕНИЕ И СОХРАНЕНИЕ СОСТОЯНИЯ ---
-this.logger.log("6. Завершение и сохранение состояния...");
-await this.uploadRemoteManifest(newFileManifest);
-this.settings.localManifest = {
-    files: newFileManifest,
-    folders: Array.from(currentLocalFolders)
-};
-await this.saveSettings();
-
-if (this.isNewDevice) {
-    try {
-        window.localStorage.setItem(DEVICE_INITIALIZED_KEY, 'true');
-        this.isNewDevice = false;
-        this.logger.log("Устройство помечено как инициализированное. Следующие синхронизации будут проходить в обычном режиме.");
-    } catch(e) {
-        this.logger.warn("Не удалось записать флаг инициализации в localStorage.");
-    }
-}
-
-const hasChanges = operations.length > 0 || stats.folderDeleted > 0 || foldersToCreateLocally.length > 0;
-if (!isQuitting) {
-if (hasChanges) {
-new import_obsidian.Notice("YD Sync: Готово", 3e3);
-} else {
-new import_obsidian.Notice("YD Sync: Нет изменений", 3e3);
-}
-this.logger.log("--- Сеанс синхронизации завершен ---");
-this.logger.log(`Статистика: ${JSON.stringify(stats)}`);
-}
-
-} catch (error) {
-this.logger.error("КРИТИЧЕСКАЯ ОШИБКА СИНХРОНИЗАЦИИ:", error);
-if (!isQuitting) {
-new import_obsidian.Notice(`Критическая ошибка: ${error.message}. Подробности в логе.`, 15e3);
-}
-} finally {
-this.syncInProgress = false;
-await this.logger.flush();
-}
-}
-
-getRemoteBasePath() {
-    const remoteBase = this.settings.remoteFolderName.trim();
-    const vaultSubfolder = this.settings.vaultSubfolder?.trim();
-
-    if (vaultSubfolder) {
-        return `${remoteBase}/${vaultSubfolder}`;
-    } else {
-        const vaultName = this.app.vault.getName();
-        const pathSegments = [remoteBase];
-        if (remoteBase.toLowerCase() !== vaultName.toLowerCase()) {
-            pathSegments.push(vaultName);
-        }
-        return pathSegments.join("/");
-    }
-}
-
-getRemoteIncomingFolderPath() {
-    return `${this.settings.remoteFolderName}/${INCOMING_FOLDER_NAME}`;
-}
-
-async getLocalState() {
-const files = {};
-const folders = new Set();
-const abstractFiles = this.app.vault.getAllLoadedFiles().filter((f) =>
-!f.path.startsWith(".obsidian/") && !IGNORED_FILES.includes(f.name)
-);
-
-const fileReadPromises = [];
-for (const abstractFile of abstractFiles) {
-if (abstractFile instanceof import_obsidian.TFolder) {
-if (abstractFile.path !== "/") {
-folders.add(abstractFile.path);
-}
-continue;
-}
-if (abstractFile instanceof import_obsidian.TFile) {
-const parentDir = abstractFile.parent.path;
-if (parentDir && parentDir !== "/") {
-folders.add(parentDir);
-}
-
-fileReadPromises.push((async () => {
-try {
-const content = await this.app.vault.readBinary(abstractFile);
-const md5 = this.calculateMD5(content);
-files[abstractFile.path] = md5;
-} catch (e) {
-this.logger.warn(`Не удалось прочитать локальный файл ${abstractFile.path}, он будет пропущен.`);
-}
-})());
-}
-}
-await Promise.all(fileReadPromises);
-return { files, folders };
-}
-
-async getRemoteManifest() {
-const remotePath = `${this.getRemoteBasePath()}/${MANIFEST_NAME}`;
-try {
-const downloadUrlResponse = await this.authenticatedRequest(`${YANDEX_API_BASE_URL}/resources/download?path=${encodeURIComponent(remotePath)}`);
-const { href } = await downloadUrlResponse.json();
-const manifestResponse = await fetch(href);
-if (!manifestResponse.ok) throw new Error("Failed to download manifest content");
-return await manifestResponse.json();
-} catch (error) {
-if (error.message.includes("404")) {
-this.logger.warn("Файл манифеста не найден на Диске.");
-return null;
-}
-this.logger.error("Ошибка при получении удаленного манифеста:", error);
-throw new Error("Не удалось получить манифест с Диска.");
-}
-}
-
-async uploadRemoteManifest(manifestObject) {
-const remotePath = `${this.getRemoteBasePath()}/${MANIFEST_NAME}`;
-const manifestContent = JSON.stringify(manifestObject, null, 2);
-try {
-const uploadUrlResponse = await this.authenticatedRequest(`${YANDEX_API_BASE_URL}/resources/upload?path=${encodeURIComponent(remotePath)}&overwrite=true`, "GET");
-const { href } = await uploadUrlResponse.json();
-await fetch(href, {
-method: "PUT",
-headers: { 'Content-Type': 'application/json' },
-body: manifestContent
-});
-this.logger.log("Манифест на Диске успешно обновлен.");
-} catch (e) {
-this.logger.error("Не удалось загрузить манифест на Диск:", e);
-throw new Error("Не удалось обновить манифест на Диске.");
-}
-}
-
-async uploadFile(path) {
-this.logger.log(`Uploading file: ${path}`);
-const file = this.app.vault.getAbstractFileByPath(path);
-if (!(file instanceof import_obsidian.TFile)) {
-this.logger.warn(`Upload skipped: local file not found at ${path}`);
-return;
-}
-const remotePath = `${this.getRemoteBasePath()}/${path}`;
-
-const parentDir = path.substring(0, path.lastIndexOf("/"));
-if (parentDir) {
-    await this.createRemoteFolder(`${this.getRemoteBasePath()}/${parentDir}`);
-}
-
-try {
-const uploadUrlResponse = await this.authenticatedRequest(`${YANDEX_API_BASE_URL}/resources/upload?path=${encodeURIComponent(remotePath)}&overwrite=true`);
-const { href } = await uploadUrlResponse.json();
-const fileContent = await this.app.vault.readBinary(file);
-await fetch(href, { method: "PUT", body: fileContent });
-this.logger.log(`Upload success: ${path}`);
-} catch (e) {
-this.logger.error(`Failed to upload file ${path}:`, e);
-}
+    const render = () => {
+      pre.setText(this.plugin.getProgressSummary());
+    };
+    render();
+    this._timer = setInterval(render, 500);
+  }
+  onClose() {
+    if (this._timer) clearInterval(this._timer);
+  }
 }
 
 
-async downloadFile(path, md5, sourceRemotePath = null) {
-    this.logger.log(`Downloading file: ${path}`);
-    const remotePath = sourceRemotePath ? sourceRemotePath : `${this.getRemoteBasePath()}/${path}`;
+class YandexDiskSyncSettingTab extends PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+  display() {
+    const { containerEl } = this;
+    containerEl.empty();
+    try { containerEl.addClass('yds-copyable'); } catch (_) {}
+    containerEl.createEl('h2', { text: 'Настройки Yandex Disk Sync' });
+
+    // Язык по умолчанию — русский, выбор убран
+    this.plugin.settings.lang = 'ru';
     
+    containerEl.createEl('h3', { text: 'Авторизация' });
+
+    new Setting(containerEl)
+      .setName('Client ID')
+      .setDesc(this.plugin.t('desc.clientId'))
+      .addText((txt) =>
+        txt
+          .setPlaceholder('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+          .setValue(this.plugin.settings.clientId)
+          .onChange(async (v) => {
+            this.plugin.settings.clientId = v.trim();
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    const tokenSetting = new Setting(containerEl)
+      .setName('OAuth токен')
+      .setDesc(this.plugin.t('desc.accessToken'))
+      .addText((txt) =>
+        txt
+          .setPlaceholder('(вставьте токен доступа)')
+          .setValue(this.plugin.settings.accessToken || '')
+          .onChange(async (v) => {
+            this.plugin.settings.accessToken = (v || '').trim();
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Управление подключением')
+      .setDesc(this.plugin.t('desc.oauthControls'))
+      .addButton((b) =>
+        b.setButtonText('Подключить').onClick(() => this.plugin.startOAuthFlow()),
+      )
+      .addButton((b) =>
+        b
+          .setButtonText('Отключить')
+          .onClick(async () => {
+            this.plugin.settings.accessToken = '';
+            await this.plugin.saveSettings();
+            new Notice('Токен удалён');
+            this.display();
+          }),
+      )
+      .addButton((b) =>
+        b
+          .setButtonText('Управлять в Яндексе')
+          .onClick(() => this.plugin.openOAuthManagement()),
+      );
+
+    new Setting(containerEl)
+      .setName('Базовый URL для OAuth')
+      .setDesc(this.plugin.t('desc.oauthBaseUrl'))
+      .addText((txt) =>
+        txt
+          .setPlaceholder(DEFAULT_SETTINGS.oauthBaseUrl)
+          .setValue(this.plugin.settings.oauthBaseUrl)
+          .onChange(async (v) => {
+            const val = (v || '').trim() || DEFAULT_SETTINGS.oauthBaseUrl;
+            this.plugin.settings.oauthBaseUrl = val;
+            await this.plugin.saveSettings();
+          }),
+      );
+      
+    containerEl.createEl('h3', { text: 'Настройки Синхронизации' });
+
+    new Setting(containerEl)
+      .setName('Шаблоны игнорирования')
+      .setDesc(this.plugin.t('desc.ignorePatterns'))
+      .addTextArea((txt) =>
+        txt
+          .setPlaceholder('.obsidian/**, **/.trash/**')
+          .setValue(this.plugin.settings.ignorePatterns.join(', '))
+          .onChange(async (v) => {
+            this.plugin.settings.ignorePatterns = v
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean);
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Режим синхронизации')
+      .setDesc(this.plugin.t('desc.syncMode'))
+      .addDropdown((dd) =>
+        dd
+          .addOptions({ 'two-way': 'Двусторонняя', upload: 'Только загрузка', download: 'Только скачивание' })
+          .setValue(this.plugin.settings.syncMode)
+          .onChange(async (v) => {
+            this.plugin.settings.syncMode = v;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Политика удаления')
+      .setDesc(this.plugin.t('desc.deletePolicy'))
+      .addDropdown((dd) =>
+        dd
+          .addOptions({ mirror: 'Зеркально', skip: 'Пропускать' })
+          .setValue(this.plugin.settings.deletePolicy)
+          .onChange(async (v) => {
+            this.plugin.settings.deletePolicy = v;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    containerEl.createEl('h3', { text: 'Разрешение конфликтов' });
+
+    new Setting(containerEl)
+      .setName('Стратегия')
+      .setDesc(this.plugin.t('desc.strategy'))
+      .addDropdown((dd) =>
+        dd
+          .addOptions({ 'newest-wins': 'Новейшее выигрывает', 'duplicate-both': 'Дублировать оба' })
+          .setValue(this.plugin.settings.conflictStrategy || 'newest-wins')
+          .onChange(async (v) => {
+            this.plugin.settings.conflictStrategy = v;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Допуск по времени (сек)')
+      .setDesc(this.plugin.t('desc.tolerance'))
+      .addText((txt) =>
+        txt
+          .setPlaceholder('180')
+          .setValue(String(this.plugin.settings.timeSkewToleranceSec || 0))
+          .onChange(async (v) => {
+            const n = Math.max(0, Math.min(3600, Number(v) || 0));
+            this.plugin.settings.timeSkewToleranceSec = n;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    containerEl.createEl('h3', { text: 'Производительность и Автоматизация' });
+
+    new Setting(containerEl)
+      .setName('Максимальный размер файла (МБ)')
+      .setDesc(this.plugin.t('desc.maxSize'))
+      .addText((txt) =>
+        txt
+          .setValue(String(this.plugin.settings.maxSizeMB))
+          .onChange(async (v) => {
+            const n = Number(v);
+            if (!Number.isFinite(n) || n <= 0) return;
+            this.plugin.settings.maxSizeMB = n;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Параллельные операции (загрузка/скачивание)')
+      .setDesc(this.plugin.t('desc.concurrency'))
+      .addText((txt) =>
+        txt
+          .setPlaceholder('загрузка')
+          .setValue(String(this.plugin.settings.uploadConcurrency))
+          .onChange(async (v) => {
+            const n = Math.max(1, Math.min(8, Number(v) || 1));
+            this.plugin.settings.uploadConcurrency = n;
+            await this.plugin.saveSettings();
+          }),
+      )
+      .addText((txt) =>
+        txt
+          .setPlaceholder('скачивание')
+          .setValue(String(this.plugin.settings.downloadConcurrency))
+          .onChange(async (v) => {
+            const n = Math.max(1, Math.min(8, Number(v) || 1));
+            this.plugin.settings.downloadConcurrency = n;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Интервал автосинхронизации (минуты)')
+      .setDesc(this.plugin.t('desc.autoSync'))
+      .addText((txt) =>
+        txt
+          .setPlaceholder('0')
+          .setValue(String(this.plugin.settings.autoSyncIntervalMin))
+          .onChange(async (v) => {
+            const n = Math.max(0, Math.min(1440, Number(v) || 0));
+            this.plugin.settings.autoSyncIntervalMin = n;
+            await this.plugin.saveSettings();
+            this.plugin.resetAutoSyncTimer();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Синхронизировать при запуске')
+      .setDesc(this.plugin.t('desc.syncOnStartup'))
+      .addToggle((tg) =>
+        tg
+          .setValue(!!this.plugin.settings.syncOnStartup)
+          .onChange(async (v) => {
+            this.plugin.settings.syncOnStartup = !!v;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Задержка при запуске (сек)')
+      .setDesc(this.plugin.t('desc.syncOnStartupDelay'))
+      .addText((txt) =>
+        txt
+          .setPlaceholder('0')
+          .setValue(String(this.plugin.settings.syncOnStartupDelaySec || 0))
+          .onChange(async (v) => {
+            const n = Math.max(0, Math.min(3600, Number(v) || 0));
+            this.plugin.settings.syncOnStartupDelaySec = n;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    containerEl.createEl('h3', { text: 'Управление' });
+
+    new Setting(containerEl)
+      .setName('Ручная синхронизация')
+      .setDesc(this.plugin.t('desc.syncNow'))
+      .addButton((b) => b.setCta().setButtonText('Синхронизировать').onClick(() => this.plugin.syncNow(false)));
+
+    new Setting(containerEl)
+      .setName('Предпросмотр')
+      .setDesc(this.plugin.t('desc.dryRun'))
+      .addButton((b) => b.setButtonText('Показать план').onClick(() => this.plugin.syncNow(true)));
+
+    containerEl.createEl('h3', { text: 'Диагностика' });
+    new Setting(containerEl)
+      .setName('Окно диагностики')
+      .setDesc(this.plugin.t('desc.diagnostics'))
+      .addText((txt) =>
+        txt
+          .setPlaceholder(String(DEFAULT_SETTINGS.diagnosticsLines))
+          .setValue(String(this.plugin.settings.diagnosticsLines || DEFAULT_SETTINGS.diagnosticsLines))
+          .onChange(async (v) => {
+            let n = Number(v);
+            if (!Number.isFinite(n)) return;
+            n = Math.max(1, Math.min(this.plugin.settings.logLimit || 500, Math.floor(n)));
+            this.plugin.settings.diagnosticsLines = n;
+            await this.plugin.saveSettings();
+          }),
+      )
+      .addButton((b) => b.setButtonText('Открыть').onClick(() => this.plugin.showDiagnostics()));
+  }
+}
+
+// ... (остальной код после YandexDiskSyncSettingTab без изменений)
+class YandexDiskSyncPlugin extends Plugin {
+  async onload() {
+    this.log = [];
+    this.index = { files: {}, lastSyncAt: null };
+    this.currentRun = null;
+    this.statusBar = null;
+
+    await this.loadSettings();
+    // One-time migration: if vaultFolderName is unset or legacy 'vault', apply suggested vault name
     try {
-        this.logger.log(`Requesting download from remote path: ${remotePath}`);
-        const downloadUrlResponse = await this.authenticatedRequest(`${YANDEX_API_BASE_URL}/resources/download?path=${encodeURIComponent(remotePath)}`);
-        const { href } = await downloadUrlResponse.json();
-        const fileContentResponse = await fetch(href);
-        if (!fileContentResponse.ok) {
-            throw new Error(`Server returned ${fileContentResponse.status} for file content`);
-        }
-        const fileContent = await fileContentResponse.arrayBuffer();
+      if (!this.settings._autoVaultNameApplied && (!this.settings.vaultFolderName || this.settings.vaultFolderName === 'vault')) {
+        this.settings.vaultFolderName = this.getSuggestedVaultFolderName();
+        this.settings._autoVaultNameApplied = true;
+        await this.saveSettings();
+      }
+    } catch (_) {}
 
-        const existingFile = this.app.vault.getAbstractFileByPath(path);
-        if (existingFile instanceof import_obsidian.TFile) {
-            await this.app.vault.modifyBinary(existingFile, fileContent);
-        } else {
-            const parentDir = path.substring(0, path.lastIndexOf("/"));
-            if (parentDir) {
-                await this.createLocalFolder(parentDir);
-            }
-            await this.app.vault.createBinary(path, fileContent);
-        }
-        this.logger.log(`Download success: ${path}`);
-    } catch (e) {
-        this.logger.error(`Failed to download file ${path}:`, e);
-    }
-}
+    this.addCommand({ id: 'sync-now', name: 'Sync now', callback: () => this.syncNow(false) });
+    this.addCommand({ id: 'dry-run', name: 'Dry-run (plan only)', callback: () => this.syncNow(true) });
+    this.addCommand({ id: 'diagnostics', name: 'Diagnostics', callback: () => this.showDiagnostics() });
 
+    this.settingTab = new YandexDiskSyncSettingTab(this.app, this);
+    this.addSettingTab(this.settingTab);
 
-async deleteRemoteFile(path) {
-this.logger.log(`Deleting remote file: ${path}`);
-const remotePath = `${this.getRemoteBasePath()}/${path}`;
-await this.authenticatedRequest(`${YANDEX_API_BASE_URL}/resources?path=${encodeURIComponent(remotePath)}&permanently=true`, "DELETE");
-}
-
-async deleteLocalFile(path) {
-    this.logger.log(`Deleting local file: ${path}`);
+    // Ensure settings text (names/descriptions) is selectable/copyable
     try {
-        const file = this.app.vault.getAbstractFileByPath(path);
-        if (file instanceof import_obsidian.TFile) {
-            await this.app.vault.delete(file);
-            this.logger.log(`Local file deleted: ${path}`);
-        } else {
-            this.logger.warn(`Could not delete local file, not found: ${path}`);
-        }
-    } catch (e) {
-        this.logger.error(`Failed to delete local file ${path}:`, e);
+      this._copyStyleEl = document.createElement('style');
+      this._copyStyleEl.textContent = `.yds-copyable, .yds-copyable * { user-select: text !important; -webkit-user-select: text !important; }`;
+      document.head.appendChild(this._copyStyleEl);
+    } catch (_) {}
+
+    this.resetAutoSyncTimer();
+
+    if (this.settings.showStatusBar) this.initStatusBar();
+    this.initRibbon();
+
+    // Optional: run sync on startup after layout is ready
+    if (this.settings.syncOnStartup) {
+      const start = () => {
+        if (this.settings.accessToken) this.syncNow(false).catch(() => {});
+      };
+      const delayMs = Math.max(0, (Number(this.settings.syncOnStartupDelaySec) || 0) * 1000);
+      try {
+        if (this.app?.workspace?.onLayoutReady) this.app.workspace.onLayoutReady(() => setTimeout(start, delayMs));
+        else setTimeout(start, Math.max(2000, delayMs));
+      } catch (_) {
+        setTimeout(start, Math.max(2000, delayMs));
+      }
     }
-}
 
+    this.registerEvent(this.app.vault.on('modify', (f) => this.onLocalEvent('modify', f)));
+    this.registerEvent(this.app.vault.on('create', (f) => this.onLocalEvent('create', f)));
+    this.registerEvent(this.app.vault.on('delete', (f) => this.onLocalEvent('delete', f)));
+    this.registerEvent(this.app.vault.on('rename', (f, oldPath) => this.onLocalEvent('rename', f, oldPath)));
 
-async deleteRemoteFolder(path) {
-    this.logger.log(`Deleting remote folder: ${path}`);
-    const cleanedPath = path.startsWith('/') ? path.substring(1) : path;
-    const remotePath = `${this.getRemoteBasePath()}/${cleanedPath}`;
-    await this.authenticatedRequest(`${YANDEX_API_BASE_URL}/resources?path=${encodeURIComponent(remotePath)}&permanently=true&force_async=true`, "DELETE");
-}
+    this.logInfo('Loaded Yandex Disk Sync');
+  }
 
-async moveRemoteFile(sourceRemotePath, destinationRemotePath, overwrite = false) {
-    this.logger.log(`Moving remote file from ${sourceRemotePath} to ${destinationRemotePath} (overwrite: ${overwrite})`);
-    const url = `${YANDEX_API_BASE_URL}/resources/move?from=${encodeURIComponent(sourceRemotePath)}&path=${encodeURIComponent(destinationRemotePath)}&overwrite=${overwrite}`;
+  onunload() {
+    if (this._autoTimer) clearInterval(this._autoTimer);
+    try { this._copyStyleEl?.remove(); } catch (_) {}
+  }
+
+  getLang() {
+    return 'ru'; // Принудительно используем русский
+  }
+
+  t(key) {
+    const lang = this.getLang();
+    return (I18N[lang] && I18N[lang][key]) || (I18N.en && I18N.en[key]) || key;
+  }
+
+  async loadSettings() {
+    const data = await this.loadData();
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, data?.settings || {});
+    this.index = data?.index || { files: {}, lastSyncAt: null };
+  }
+
+  async saveSettings() {
+    await this.saveData({ settings: this.settings, index: this.index });
+  }
+
+  initStatusBar() {
     try {
-        await this.authenticatedRequest(url, "POST");
-        this.logger.log(`Remote file moved: ${sourceRemotePath} -> ${destinationRemotePath}`);
-    } catch (e) {
-        this.logger.error(`Failed to move remote file ${sourceRemotePath} to ${destinationRemotePath}:`, e);
-        if (e.message.includes("409")) {
-            this.logger.warn(`Conflict when moving remote file: ${sourceRemotePath}. File likely already exists at destination or parent path does not exist.`);
-        }
-        throw e;
-    }
-}
+      this.statusBar = this.addStatusBarItem();
+      this.statusBar.style.cursor = 'pointer';
+      this.statusBar.onclick = () => this.openProgress();
+      this.updateStatusBar('Idle');
+    } catch (_) {}
+  }
 
-
-async handleConflict(path, localHash, remoteHash) {
-const file = this.app.vault.getAbstractFileByPath(path);
-if (!(file instanceof import_obsidian.TFile)) {
-return {
-operations: [{ type: 'download', path, md5: remoteHash }],
-manifestUpdates: { [path]: remoteHash }
-};
-}
-
-const date = new Date();
-const timestamp = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}_${String(date.getHours()).padStart(2, "0")}-${String(date.getMinutes()).padStart(2, "0")}`;
-const extensionIndex = path.lastIndexOf(".");
-const basePath = extensionIndex > 0 ? path.substring(0, extensionIndex) : path;
-const extension = extensionIndex > 0 ? path.substring(extensionIndex) : "";
-const newPath = (0, import_obsidian.normalizePath)(`${basePath} (конфликт от ${timestamp})${extension}`);
-
-new import_obsidian.Notice(`Конфликт для "${path}". Локальная версия переименована.`, 7e3);
-this.logger.warn(`[Conflict Resolved] Конфликт для "${path}". Локальная версия переименована в "${newPath}". Скачиваю версию с Диска.`);
-
-return {
-operations: [
-{ type: 'rename_local_for_conflict', file, newPath },
-{ type: 'download', path, md5: remoteHash }
-],
-manifestUpdates: {
-[newPath]: localHash,
-[path]: remoteHash
-}
-};
-}
-
-async createLocalFolder(path) {
-try {
-await this.app.vault.createFolder(path);
-} catch (e) {
-if (!e.message.includes("Folder already exists")) {
-    this.logger.error(`Failed to create local folder ${path}:`, e);
-    throw e;
-}
-}
-}
-
-async createRemoteFolder(fullRemotePath) {
-    if (this.createdRemoteFoldersInSession && this.createdRemoteFoldersInSession.has(fullRemotePath)) {
-        return;
-    }
+  initRibbon() {
     try {
-        await this.authenticatedRequest(
-            `${YANDEX_API_BASE_URL}/resources?path=${encodeURIComponent(fullRemotePath)}`, "PUT"
-        );
-        this.logger.log(`Remote folder created or already exists: ${fullRemotePath}`);
+      this.ribbonEl = this.addRibbonIcon(
+        'refresh-ccw',
+        'Yandex Disk Sync — Синхронизировать',
+        async () => {
+          if (this.currentRun?.active) {
+            new Notice('Синхронизация уже запущена');
+            this.openProgress();
+            return;
+          }
+          await this.syncNow(false);
+        },
+      );
+      this.ribbonEl.addClass('yandex-disk-sync-ribbon');
+    } catch (_) {}
+  }
+
+  updateStatusBar(state) {
+    if (!this.statusBar) return;
+    const run = this.currentRun;
+    const total = run?.total || 0;
+    const done = run?.done || 0;
+    const failed = run?.failed || 0;
+    const txt = total
+      ? `YDS: ${state} (вып.:${done} ошиб.:${failed} всего:${total})`
+      : `YDS: ${state}`;
+    this.statusBar.textContent = txt;
+    try {
+      if (this.ribbonEl) {
+        this.ribbonEl.setAttribute('aria-label', txt);
+        this.ribbonEl.setAttribute('title', txt);
+      }
+    } catch (_) {}
+    let color = '#bbb';
+    if (state === 'Running' || state === 'Uploading' || state === 'Downloading') color = '#4da3ff';
+    else if (state === 'Throttled') color = '#e6a700';
+    else if (state === 'Error') color = '#ff5c5c';
+    else if (state === 'Done') color = '#4caf50';
+    this.statusBar.style.color = color;
+    this.statusBar.title = `Последняя синхронизация: ${this.index.lastSyncAt || 'никогда'}`;
+  }
+
+  openProgress() {
+    if (!this._progressModal) this._progressModal = new ProgressModal(this.app, this);
+    this._progressModal.open();
+  }
+
+  startRun(dryRun, planCount = 0) {
+    this.currentRun = {
+      active: true,
+      dryRun: !!dryRun,
+      startAt: Date.now(),
+      phase: 'Планирование',
+      total: planCount,
+      done: 0,
+      failed: 0,
+      queued: planCount,
+      canceled: false,
+      lastOps: [],
+      counts: { upload: { queued: 0, done: 0 }, download: { queued: 0, done: 0 }, del: { queued: 0, done: 0 }, conflict: { queued: 0, done: 0 } },
+    };
+    this.updateStatusBar('Планирование');
+  }
+
+  setRunPlan(plan) {
+    const c = { upload: 0, download: 0, del: 0, conflict: 0 };
+    for (const op of plan) {
+      if (op.type === 'upload') c.upload++;
+      else if (op.type === 'download') c.download++;
+      else if (op.type === 'remote-delete' || op.type === 'local-delete') c.del++;
+      else if (op.type === 'conflict') c.conflict++;
+    }
+    const r = this.currentRun;
+    if (!r) return;
+    r.total = plan.length;
+    r.queued = plan.length;
+    r.counts.upload.queued = c.upload;
+    r.counts.download.queued = c.download;
+    r.counts.del.queued = c.del;
+    r.counts.conflict.queued = c.conflict;
+    this.updateStatusBar('Выполнение');
+  }
+
+  finishRun(ok) {
+    const r = this.currentRun;
+    if (!r) return;
+    r.active = false;
+    r.endAt = Date.now();
+    this.updateStatusBar(ok ? 'Готово' : 'Ошибка');
+  }
+
+  cancelCurrentRun() {
+    if (this.currentRun?.active) {
+      this.currentRun.canceled = true;
+      this.logWarn('Отмена запрошена пользователем');
+    }
+  }
+
+  reportOpStart(op) {
+    const r = this.currentRun; if (!r) return;
+    r.phase = op.type;
+    this.updateStatusBar(op.type === 'upload' ? 'Загрузка' : op.type === 'download' ? 'Скачивание' : 'Выполнение');
+  }
+  reportOpEnd(op, ok, errMsg) {
+    const r = this.currentRun; if (!r) return;
+    r.done += ok ? 1 : 0;
+    r.failed += ok ? 0 : 1;
+    r.queued = Math.max(0, r.queued - 1);
+    const bucket = op.type === 'upload' ? 'upload' : op.type === 'download' ? 'download' : 'del';
+    if (r.counts[bucket]) {
+      r.counts[bucket].done += ok ? 1 : 0;
+      r.counts[bucket].queued = Math.max(0, r.counts[bucket].queued - 1);
+    }
+    const line = `${ok ? 'OK' : 'FAIL'} ${op.type} ${op.rel || ''}` + (op.toAbs ? ` -> ${op.toAbs}` : '') + (op.fromAbs ? ` <- ${op.fromAbs}` : '') + (ok ? '' : ` — ${errMsg || ''}`);
+    r.lastOps.push(line);
+    const cap = Math.max(1, this.settings.progressLines || 25);
+    while (r.lastOps.length > cap) r.lastOps.shift();
+  }
+
+  getProgressSummary() {
+    const r = this.currentRun;
+    if (!r) return 'Нет активной синхронизации.';
+    const elapsed = ((Date.now() - r.startAt) / 1000).toFixed(1);
+    const header = [
+      `Фаза: ${r.phase}${r.canceled ? ' (отмена...)' : ''}`,
+      `Прогресс: ${r.done}/${r.total} (ошибки ${r.failed}, в очереди ${r.queued})`,
+      `Загрузки: ${r.counts.upload.done}/${r.counts.upload.done + r.counts.upload.queued}  Скачивания: ${r.counts.download.done}/${r.counts.download.done + r.counts.download.queued}  Удаления: ${r.counts.del.done}/${r.counts.del.done + r.counts.del.queued}`,
+      `Прошло времени: ${elapsed}с`,
+      '',
+      'Последние операции:',
+      ...(r.lastOps.length ? r.lastOps.slice().reverse() : ['(нет)']),
+    ].join('\n');
+    return header;
+  }
+
+  resetAutoSyncTimer() {
+    if (this._autoTimer) clearInterval(this._autoTimer);
+    const minutes = this.settings.autoSyncIntervalMin;
+    if (minutes > 0) {
+      this._autoTimer = setInterval(() => this.syncNow(false).catch(() => {}), minutes * 60 * 1000);
+    }
+  }
+
+  logInfo(msg) {
+    const line = `[${nowIso()}] INFO ${msg}`;
+    console.log(`[${PLUGIN_ID}]`, msg);
+    this.log.push(line);
+    if (this.log.length > this.settings.logLimit) this.log.shift();
+  }
+  logWarn(msg) {
+    const line = `[${nowIso()}] WARN ${msg}`;
+    console.warn(`[${PLUGIN_ID}]`, msg);
+    this.log.push(line);
+    if (this.log.length > this.settings.logLimit) this.log.shift();
+  }
+  logError(msg) {
+    const line = `[${nowIso()}] ERROR ${msg}`;
+    console.error(`[${PLUGIN_ID}]`, msg);
+    this.log.push(line);
+    if (this.log.length > this.settings.logLimit) this.log.shift();
+  }
+
+  async showDiagnostics() {
+    const token = this.settings.accessToken || '';
+    const tokenTail = token ? token.slice(-6) : '';
+    const api = this.lastApiCheck;
+    const lines = Math.max(1, Math.min(this.settings.logLimit || 500, Number(this.settings.diagnosticsLines || 50)));
+    const summary = [
+      `Версия: 1.2.0`,
+      `Локальный путь: ${this.settings.localBasePath || '(корень хранилища)'}`,
+      `Удалённый путь: ${this.getRemoteBase()}`,
+      `Режим: ${this.settings.syncMode}, Удаление: ${this.settings.deletePolicy}`,
+      `Конфликты: ${this.settings.conflictStrategy}${this.settings.conflictStrategy==='newest-wins' ? ` (допуск ${this.settings.timeSkewToleranceSec || 0}с)` : ''}`,
+      `Параллельно: загрузка ${this.settings.uploadConcurrency}, скачивание ${this.settings.downloadConcurrency}`,
+      `Автосинхронизация: ${this.settings.autoSyncIntervalMin} мин`,
+      `OAuth URL: ${this.getOAuthBase()}`,
+      `Client ID: ${this.settings.clientId ? 'да' : 'нет'}`,
+      `Токен: ${token ? 'да' : 'нет'}${token ? ` (****${tokenTail})` : ''}`,
+      `Права (scopes): ${this.settings.oauthScopes ? this.settings.oauthScopes : '(по умолчанию для приложения)'}`,
+      `Проверка API: ${api ? (api.ok ? `OK для ${api.path || this.settings.remoteBasePath}` : `ОШИБКА ${api.error}`) : 'не проводилась'}${api?.at ? ` в ${api.at}` : ''}`,
+      `Последняя синхр.: ${this.index.lastSyncAt || 'никогда'}`,
+      `Файлов в индексе: ${Object.keys(this.index.files).length}`,
+      `Последняя ошибка HTTP: ${this.lastHttpError || '-'}`,
+      '',
+      'Последние записи журнала (новые сверху):',
+      ...this.log.slice(-lines).reverse(),
+    ].join('\n');
+    const modal = new DiagnosticsModal(this.app, summary);
+    modal.open();
+
+    // Refresh API status in background and update modal text when ready
+    if (this.settings.accessToken) {
+      this.verifyToken(true)
+        .then(() => {
+          const api2 = this.lastApiCheck;
+          const lines2 = Math.max(1, Math.min(this.settings.logLimit || 500, Number(this.settings.diagnosticsLines || 50)));
+          const updated = [
+            `Версия: 1.2.0`,
+            `Локальный путь: ${this.settings.localBasePath || '(корень хранилища)'}`,
+            `Удалённый путь: ${this.settings.remoteBasePath}`,
+            `Режим: ${this.settings.syncMode}, Удаление: ${this.settings.deletePolicy}`,
+            `Параллельно: загрузка ${this.settings.uploadConcurrency}, скачивание ${this.settings.downloadConcurrency}`,
+            `Автосинхронизация: ${this.settings.autoSyncIntervalMin} мин`,
+            `OAuth URL: ${this.getOAuthBase()}`,
+            `Client ID: ${this.settings.clientId ? 'да' : 'нет'}`,
+            `Токен: ${token ? 'да' : 'нет'}${token ? ` (****${tokenTail})` : ''}`,
+            `Права (scopes): ${this.settings.oauthScopes ? this.settings.oauthScopes : '(по умолчанию для приложения)'}`,
+            `Проверка API: ${api2 ? (api2.ok ? `OK для ${api2.path || this.settings.remoteBasePath}` : `ОШИБКА ${api2.error}`) : 'не проводилась'}${api2?.at ? ` в ${api2.at}` : ''}`,
+            `Последняя синхр.: ${this.index.lastSyncAt || 'никогда'}`,
+            `Файлов в индексе: ${Object.keys(this.index.files).length}`,
+            `Последняя ошибка HTTP: ${this.lastHttpError || '-'}`,
+            '',
+            'Последние записи журнала (новые сверху):',
+            ...this.log.slice(-lines2).reverse(),
+          ].join('\n');
+          modal.setText(updated);
+        })
+        .catch(() => {});
+    }
+  }
+
+  onLocalEvent(type, file, oldPath) {
+    if (!(file?.path)) return;
+    const rel = this.toLocalRel(file.path);
+    if (!this.inScope(rel) || this.matchesIgnore(rel)) return;
+    this.logInfo(`Локальное событие: ${type} ${rel}${oldPath ? ` (из ${oldPath})` : ''}`);
+  }
+
+  getOAuthBase() {
+    const base = (this.settings.oauthBaseUrl || DEFAULT_SETTINGS.oauthBaseUrl).replace(/\/+$/, '');
+    return base;
+  }
+
+  getSuggestedVaultFolderName() {
+    try {
+      const name = (this.app?.vault?.getName && this.app.vault.getName()) || 'vault';
+      return String(name).replace(/[\\/]+/g, '').trim() || 'vault';
+    } catch (_) {
+      return 'vault';
+    }
+  }
+
+  getRemoteBase() {
+    let base = (this.settings.remoteBasePath || 'app:/').replace(/\/+$/, '');
+    let folder = (this.settings.vaultFolderName || this.getSuggestedVaultFolderName() || 'vault').trim();
+    folder = folder.replace(/[\\/]+/g, '');
+    if (!folder) folder = this.getSuggestedVaultFolderName() || 'vault';
+    return `${base}/${folder}`;
+  }
+
+  startOAuthFlow() {
+    if (!this.settings.clientId) {
+      new Notice('Сначала укажите Client ID в настройках.');
+      return;
+    }
+    const base = this.getOAuthBase();
+    const scopes = (this.settings.oauthScopes || '').trim();
+    const url = `${base}/authorize?response_type=token&client_id=${encodeURIComponent(this.settings.clientId)}${scopes ? `&scope=${encodeURIComponent(scopes)}` : ''}`;
+    try {
+      const electron = require('electron');
+      if (electron?.shell?.openExternal) {
+        electron.shell.openExternal(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    } catch (_) {
+      window.open(url, '_blank');
+    }
+    const modal = new Modal(this.app);
+    modal.titleEl.setText('Вставьте OAuth-токен Яндекса');
+    const desc = modal.contentEl.createEl('div');
+    desc.createEl('p', { text: 'В браузере открылась страница авторизации. После предоставления доступа скопируйте access_token и вставьте его сюда.' });
+    let token = '';
+    new Setting(modal.contentEl).setName('Токен доступа').addText((t) => t.onChange((v) => (token = v.trim())));
+    new Setting(modal.contentEl)
+      .addButton((b) =>
+        b.setButtonText('Сохранить').onClick(async () => {
+          if (!token) {
+            new Notice('Токен не может быть пустым');
+            return;
+          }
+          this.settings.accessToken = token;
+          await this.saveSettings();
+          new Notice('Подключено к Яндекс.Диску');
+          this.verifyToken(true).catch(() => {});
+          try { this.settingTab?.display(); } catch (_) {}
+          modal.close();
+        }),
+      )
+      .addButton((b) => b.setButtonText('Отмена').onClick(() => modal.close()));
+    modal.open();
+  }
+
+  openOAuthManagement() {
+    const url = this.getOAuthBase();
+    try {
+      const electron = require('electron');
+      if (electron?.shell?.openExternal) return electron.shell.openExternal(url);
+    } catch (_) {}
+    window.open(url, '_blank');
+  }
+
+  async verifyToken(silent = false) {
+    const basePath = (this.getRemoteBase() || '/').replace(/\/+$/, '') || '/';
+    try {
+      const probe = `${basePath}/${'.obsidian-yandex-disk-sync-probe'}`;
+      await this.ydGetUploadHref(probe, false);
+      this.lastApiCheck = { ok: true, path: basePath, at: nowIso() };
+      if (!silent) new Notice('Доступ к Яндекс.Диску подтверждён');
+      this.logInfo(`Доступ к API в порядке для пути ${basePath}`);
+      return this.lastApiCheck;
     } catch (e) {
-        if (e.message.includes("409")) {
-            this.logger.log(`Ignoring expected 409 Conflict for PUT request to ${fullRemotePath}`);
-        } else {
-            this.logger.error(`Failed to create remote folder ${fullRemotePath}:`, e);
-            throw e;
-        }
+      const msg = e?.message || String(e);
+      this.lastApiCheck = { ok: false, error: msg, at: nowIso() };
+      if (!silent) new Notice(`Ошибка проверки токена: ${msg}`);
+      this.logError(`Ошибка проверки токена: ${msg}`);
+      throw e;
     }
-    if (!this.createdRemoteFoldersInSession) {
-        this.createdRemoteFoldersInSession = new Set();
+  }
+
+  toLocalRel(fullPath) {
+    const base = this.settings.localBasePath ? normalizeRelPath(this.settings.localBasePath) + '/' : '';
+    if (!base) return normalizeRelPath(fullPath);
+    if (fullPath.startsWith(base)) return normalizeRelPath(fullPath.slice(base.length));
+    return normalizeRelPath(fullPath);
+  }
+  fromLocalRel(rel) {
+    const base = this.settings.localBasePath ? normalizeRelPath(this.settings.localBasePath) + '/' : '';
+    return normalizeRelPath(base + rel);
+  }
+  inScope(rel) {
+    if (!this.settings.localBasePath) return true;
+    return this.fromLocalRel(rel).startsWith(this.settings.localBasePath);
+  }
+  matchesIgnore(rel) {
+    if (!this._ignoreCache) {
+      this._ignoreCache = this.settings.ignorePatterns.map(globToRegExp);
     }
-    this.createdRemoteFoldersInSession.add(fullRemotePath);
-}
+    return this._ignoreCache.some((re) => re.test(rel));
+  }
 
-async getAllRemoteFolders() {
-const folders = new Set();
-const limit = 200;
-let offset = 0;
-let moreData = true;
-const basePath = this.getRemoteBasePath();
-
-while (moreData) {
-const remotePathEnc = encodeURIComponent(basePath);
-const fields = encodeURIComponent("_embedded.items.path,_embedded.items.type");
-const url = `${YANDEX_API_BASE_URL}/resources?path=${remotePathEnc}&limit=${limit}&offset=${offset}&fields=${fields}&sort=path`;
-try {
-const response = await this.authenticatedRequest(url);
-const data = await response.json();
-const remotePathPrefix = `disk:${basePath}/`;
-
-if (data._embedded && data._embedded.items) {
-for (const item of data._embedded.items) {
-if (item.type === "dir") {
-let relativePath = item.path.substring(remotePathPrefix.length);
-if (relativePath.startsWith('/')) {
-    relativePath = relativePath.substring(1);
-}
-if (relativePath) folders.add(relativePath);
-}
-}
-if (data._embedded.items.length < limit) {
-moreData = false;
-} else {
-offset += limit;
-}
-} else {
-moreData = false;
-}
-} catch (error) {
-if (error.message.includes("404")) {
-this.logger.warn(`Базовая удаленная папка ${basePath} не найдена, список папок пуст.`);
-return new Set();
-} else {
-throw error;
-}
-}
-}
-return folders;
-}
-
-async ensureRemoteFolderExists() {
-    this.createdRemoteFoldersInSession = new Set(); 
-    const remoteBase = this.settings.remoteFolderName.trim();
-    await this.createRemoteFolder(remoteBase); 
-    const vaultRemotePath = this.getRemoteBasePath();
-    await this.createRemoteFolder(vaultRemotePath);
-    const incomingRemotePath = this.getRemoteIncomingFolderPath();
-    await this.createRemoteFolder(incomingRemotePath);
-    this.logger.log(`Все необходимые базовые удаленные папки (${remoteBase}, ${vaultRemotePath}, ${incomingRemotePath}) проверены/созданы.`);
-}
-
-
-async authenticatedRequest(url, method = "GET", body = null) {
-const headers = new Headers();
-headers.append("Authorization", `OAuth ${this.settings.oauthToken}`);
-const options = { method, headers };
-if (body) {
-options.body = body;
-}
-const response = await fetch(url, options);
-if (!response.ok) {
-if (method === "PUT" && response.status === 409) {
-this.logger.log(`Ignoring expected 409 Conflict for PUT request to ${url}`);
-return response;
-}
-if (method === "DELETE" && response.status === 404) {
-this.logger.warn(`Ignoring 404 Not Found for DELETE request to ${url}`);
-return response;
-}
-if (response.status === 401) {
-throw new Error("Ошибка API (401): Неверный или истекший OAuth-токен.");
-}
-const errorText = await response.text();
-let errorMessage;
-try {
-errorMessage = JSON.parse(errorText).message || errorText;
-} catch (e) {
-errorMessage = errorText;
-}
-throw new Error(`Ошибка API Яндекс.Диска (${response.status}): ${errorMessage}`);
-}
-return response;
-}
-
-calculateMD5(content) {
-    if (typeof content !== 'string') {
-        const spark = new import_spark_md5.default.ArrayBuffer();
-        spark.append(new Uint8Array(content));
-        return spark.end();
-    }
-    const normalizedContent = content.replace(/\r\n/g, "\n");
-    return import_spark_md5.default.hash(normalizedContent);
-}
-
-promptFirstSync() {
-return new Promise((resolve) => {
-const modal = new import_obsidian.Modal(this.app);
-modal.contentEl.createEl("h2", { text: "Первая синхронизация" });
-modal.contentEl.createEl("p", { text: "На Яндекс.Диске не найдено состояние хранилища. Чтобы начать, нужно загрузить текущее состояние вашего локального хранилища на Диск." });
-modal.contentEl.createEl("p", { text: "Это действие загрузит все ваши заметки и файлы в папку на Диске. Продолжить?" });
-new import_obsidian.Setting(modal.contentEl)
-.addButton((btn) => btn.setButtonText("Да, загрузить на Диск").setWarning().onClick(() => {
-resolve("upload");
-modal.close();
-}))
-.addButton((btn) => btn.setButtonText("Отмена").onClick(() => {
-resolve("cancel");
-modal.close();
-}));
-modal.open();
-});
-}
-
-promptMergeSync() {
-    return new Promise((resolve) => {
-        const modal = new import_obsidian.Modal(this.app);
-        modal.contentEl.createEl("h2", { text: "Подключение нового устройства" });
-        modal.contentEl.createEl("p", { text: "Обнаружена существующая синхронизация на Яндекс.Диске. Выберите, как поступить с файлами на этом устройстве:" });
-
-        const descEl = modal.contentEl.createEl("div");
-        descEl.style.marginBottom = "1em";
-
-        descEl.createEl("p", { text: "1. Слить данные (рекомендуется)" }).createEl("small", {
-            text: "Файлы с этого устройства, которых нет на Диске, будут загружены. Файлы с Диска, которых нет здесь, будут скачаны. Ничего не будет удалено.",
-            attr: { style: "display: block; color: var(--text-muted);" }
-        });
-        
-        descEl.createEl("p", { text: "2. Только скачать (перезаписать локальные)" }).createEl("small", {
-            text: "Все данные будут скачаны с Диска. Локальные файлы, которых нет на Диске, будут УДАЛЕНЫ. Используйте, если хотите, чтобы это устройство было точной копией данных с Диска.",
-            attr: { style: "display: block; color: var(--text-muted);" }
-        });
-
-        new import_obsidian.Setting(modal.contentEl)
-            .addButton((btn) => btn.setButtonText("Слить данные").setCta().onClick(() => {
-                resolve("merge");
-                modal.close();
-            }))
-            .addButton((btn) => btn.setButtonText("Только скачать").setWarning().onClick(() => {
-                resolve("download");
-                modal.close();
-            }))
-            .addButton((btn) => btn.setButtonText("Отмена").onClick(() => {
-                resolve("cancel");
-                modal.close();
-            }));
-        modal.open();
+  async http(method, url, opts = {}, isBinary = false) {
+    const token = this.settings.accessToken;
+    if (!token) throw new Error('Нет подключения: отсутствует токен доступа');
+    const headers = Object.assign({}, opts.headers || {}, {
+      Authorization: `OAuth ${token}`,
     });
-}
-
-
-async getFilesFromRemoteFolder(remotePath) {
-    const files = [];
-    const limit = 200;
-    let offset = 0;
-    let moreData = true;
-    const remotePathEnc = encodeURIComponent(remotePath);
-    const fields = encodeURIComponent("_embedded.items.name,_embedded.items.md5,_embedded.items.type,_embedded.items.path");
-
-    while (moreData) {
-        try {
-            const url = `${YANDEX_API_BASE_URL}/resources?path=${remotePathEnc}&limit=${limit}&offset=${offset}&fields=${fields}`;
-            const response = await this.authenticatedRequest(url);
-            const data = await response.json();
-
-            if (data._embedded && data._embedded.items) {
-                for (const item of data._embedded.items) {
-                    if (item.type === "file") {
-                        files.push({
-                            name: item.name,
-                            md5: item.md5,
-                            path: item.path
-                        });
-                    }
-                }
-                if (data._embedded.items.length < limit) {
-                    moreData = false;
-                } else {
-                    offset += limit;
-                }
-            } else {
-                moreData = false;
-            }
-        } catch (error) {
-            if (error.message.includes("404")) {
-                this.logger.warn(`Удаленная папка "${remotePath}" не найдена.`);
-                return [];
-            }
-            this.logger.error(`Ошибка при получении списка файлов из "${remotePath}":`, error);
-            throw error;
+    const maxAttempts = Math.max(1, Number(opts.maxAttempts || 5));
+    const noRetryStatuses = new Set(opts.noRetryStatuses || []);
+    let attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        const res = await requestUrl({ url, method, headers, body: opts.body, contentType: opts.contentType });
+        if (res.status === 429) {
+          const ra = Number(res.headers['retry-after'] || res.headers['Retry-After'] || 1);
+          const waitMs = Math.max(1000, ra * 1000);
+          this.logWarn(`Получен код 429, повтор через ${waitMs}мс`);
+          try { this.updateStatusBar('Throttled'); } catch (_) {}
+          await delay(waitMs);
+          continue;
         }
+        if (res.status >= 400) {
+          const err = new Error(`HTTP ${res.status}: ${res.text || ''}`);
+          err.status = res.status;
+          err.text = res.text;
+          throw err;
+        }
+        return isBinary ? res.arrayBuffer : (opts.expectJson ? res.json : res);
+      } catch (e) {
+        const status = e?.status || e?.response?.status;
+        const body = e?.text || e?.response?.text;
+        const msg = status ? `HTTP ${status}${body ? `: ${String(body).slice(0, 200)}` : ''}` : (e?.message || String(e));
+        this.lastHttpError = msg;
+        const shouldRetry = !(noRetryStatuses.has?.(status)) && attempt < maxAttempts;
+        if (!shouldRetry) throw new Error(msg);
+        const backoff = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+        this.logWarn(`Ошибка HTTP (попытка ${attempt}): ${msg}. Повтор через ${backoff}мс`);
+        await delay(backoff);
+      }
+    }
+  }
+
+  async ydGetResource(path, params = {}) {
+    const q = new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]));
+    q.set('path', path);
+    const url = `${API_BASE}/resources?${q.toString()}`;
+    const data = await this.http('GET', url, { expectJson: true });
+    return data;
+  }
+
+  async ydListFolderRecursive(basePath) {
+    const files = [];
+    const stack = [basePath];
+    const fields = '_embedded.items.name,_embedded.items.type,_embedded.items.path,_embedded.items.size,_embedded.items.md5,_embedded.items.sha256,_embedded.items.modified,_embedded.items.revision';
+    while (stack.length) {
+      const p = stack.pop();
+      let limit = 200, offset = 0;
+      while (true) {
+        const data = await this.ydGetResource(p, { limit, offset, fields });
+        const items = data?._embedded?.items || [];
+        for (const it of items) {
+          if (it.type === 'dir') {
+            stack.push(it.path);
+          } else if (it.type === 'file') {
+            files.push({
+              path: it.path,
+              name: it.name,
+              size: it.size,
+              md5: it.md5,
+              sha256: it.sha256,
+              modified: it.modified,
+              revision: it.revision,
+              rel: this.remoteAbsToRel(it.path, basePath),
+            });
+          }
+        }
+        if (items.length < limit) break;
+        offset += limit;
+      }
     }
     return files;
-}
+  }
 
-async processIncomingFolder(currentLocalFiles, newManifest, operations, stats, handledPaths) {
-    this.logger.group("Обработка входящей папки на Яндекс.Диске");
-    const incomingRemotePathBase = this.getRemoteIncomingFolderPath();
-    
-    const incomingFilesList = await this.getFilesFromRemoteFolder(incomingRemotePathBase);
+  remoteAbsToRel(abs, base) {
+    const stripAlias = (p) => (p || '').replace(/^(app:|disk:|trash:)/, '');
+    let A = stripAlias(abs).replace(/^\/+/, '');
+    const baseStr = base || '';
+    let B = stripAlias(baseStr).replace(/^\/+/, '');
 
-    if (incomingFilesList.length === 0) {
-        this.logger.log("Входящая папка пуста.");
-        this.logger.groupEnd();
-        return;
+    if (baseStr.startsWith('app:')) {
+      const aSegs = A.split('/');
+      if (aSegs.length >= 2) A = aSegs.slice(2).join('/'); else A = aSegs.join('/');
+      const bRel = B;
+      if (bRel) {
+        if (A === bRel) return '';
+        if (A.startsWith(bRel + '/')) return A.slice(bRel.length + 1);
+      }
+      return A;
     }
 
-    this.logger.log(`Найдено ${incomingFilesList.length} файлов во входящей папке.`);
-    stats.incoming = incomingFilesList.length;
-
-    for (const incomingItem of incomingFilesList) {
-        const fileName = incomingItem.name;
-        const localTargetPath = (0, import_obsidian.normalizePath)(fileName);
-        const remoteSourcePath = incomingItem.path;
-        const remoteDestinationPath = (0, import_obsidian.normalizePath)(`${this.getRemoteBasePath()}/${fileName}`);
-        const remoteItemMd5 = incomingItem.md5;
-
-        this.logger.group(`Обработка входящего файла: ${fileName}`);
-        this.logger.log(`Планирую загрузку входящего файла: ${localTargetPath}`);
-
-        operations.push({ type: 'download', path: localTargetPath, md5: remoteItemMd5, sourcePath: remoteSourcePath });
-        stats.downloaded++;
-
-        this.logger.log(`Планирую удаленное перемещение файла из Incoming: ${remoteSourcePath} -> ${remoteDestinationPath}`);
-        operations.push({ type: 'move_remote', from: remoteSourcePath, to: remoteDestinationPath, overwrite: true });
-
-        newManifest[localTargetPath] = remoteItemMd5;
-        handledPaths.add(localTargetPath);
-
-        this.logger.groupEnd();
+    if (B && A.startsWith(B)) {
+      let rel = A.slice(B.length);
+      if (rel.startsWith('/')) rel = rel.slice(1);
+      return rel;
     }
-    this.logger.groupEnd();
-}
+    return A;
+  }
 
-};
+  async ydGetUploadHref(absPath, overwrite = true) {
+    const q = new URLSearchParams({ path: absPath, overwrite: String(!!overwrite) });
+    const url = `${API_BASE}/resources/upload?${q.toString()}`;
+    const data = await this.http('GET', url, { expectJson: true });
+    return data.href;
+  }
 
-var YDSyncSettingTab = class extends import_obsidian.PluginSettingTab {
-constructor(app, plugin) {
-super(app, plugin);
-this.plugin = plugin;
-}
-display() {
-const { containerEl } = this;
-containerEl.empty();
-containerEl.createEl("h2", { text: "Настройки Yandex.Disk Sync" });
-new import_obsidian.Setting(containerEl).setName("OAuth-токен для Яндекс.Диска").setDesc(createFragment((frag) => {
-frag.appendText("Вы можете получить токен на ");
-frag.createEl("a", {
-href: "https://yandex.ru/dev/disk/poligon/",
-text: "этой странице",
-target: "_blank"
-});
-frag.appendText(". Внимание: токен хранится в файле настроек плагина в открытом виде.");
-})).addText(
-(text) => text.setPlaceholder("Введите ваш OAuth-токен").setValue(this.plugin.settings.oauthToken).onChange(async (value) => {
-this.plugin.settings.oauthToken = value.trim();
-await this.plugin.saveSettings();
-})
-);
-new import_obsidian.Setting(containerEl).setName("Корневая папка на Яндекс.Диске").setDesc("Укажите имя папки в корне вашего Диска для всех синхронизаций.").addText(
-(text) => text.setPlaceholder("Например, Obsidian").setValue(this.plugin.settings.remoteFolderName).onChange(async (value) => {
-this.plugin.settings.remoteFolderName = value.trim().replace(/\/|\\/g, "");
-await this.plugin.saveSettings();
-})
-);
+  async ydGetDownloadHref(absPath) {
+    const q = new URLSearchParams({ path: absPath });
+    const url = `${API_BASE}/resources/download?${q.toString()}`;
+    const data = await this.http('GET', url, { expectJson: true });
+    return data.href;
+  }
 
-new import_obsidian.Setting(containerEl)
-    .setName("Имя подпапки для хранилища (опционально)")
-    .setDesc(
-        "Укажите здесь одинаковое имя на всех устройствах (ПК, телефон), чтобы синхронизировать одно и то же хранилище, даже если их локальные имена различаются. Если оставить пустым, будет автоматически использоваться имя хранилища."
-    )
-    .addText((text) =>
-        text
-            .setPlaceholder("Например, MyNotes")
-            .setValue(this.plugin.settings.vaultSubfolder)
-            .onChange(async (value) => {
-                this.plugin.settings.vaultSubfolder = value.trim().replace(/\/|\\/g, "");
-                await this.plugin.saveSettings();
-            })
-    );
-
-
-new import_obsidian.Setting(containerEl).setName("Синхронизировать при запуске").setDesc("Автоматически запускать синхронизацию через несколько секунд после старта Obsidian.").addToggle(
-(toggle) => toggle.setValue(this.plugin.settings.syncOnStart).onChange(async (value) => {
-this.plugin.settings.syncOnStart = value;
-await this.plugin.saveSettings();
-})
-);
-containerEl.createEl("h3", { text: "Отладка" });
-new import_obsidian.Setting(containerEl).setName("Сброс состояния синхронизации").setDesc("Это заставит плагин считать, что синхронизация на этом устройстве происходит впервые. Используйте, если синхронизация работает некорректно.").addButton((button) => {
-button.setButtonText("Сбросить локальное состояние").setWarning().onClick(async () => {
+  async ydEnsureFolder(absPath) {
+    const q = new URLSearchParams({ path: absPath });
+    const url = `${API_BASE}/resources?${q.toString()}`;
     try {
-        window.localStorage.removeItem(DEVICE_INITIALIZED_KEY);
-        this.plugin.isNewDevice = true;
-        this.plugin.logger.log("Флаг инициализации устройства сброшен.");
-        new import_obsidian.Notice("Флаг инициализации устройства сброшен.");
-    } catch(e) {
-        new import_obsidian.Notice("Не удалось сбросить флаг инициализации.", 5000);
+      await this.http('PUT', url, { maxAttempts: 1, noRetryStatuses: [409] });
+    } catch (e) {
+      if ((e?.message || '').includes('HTTP 409')) return;
+      throw e;
     }
-    this.plugin.settings.localManifest = { files: {}, folders: [] };
-    await this.plugin.saveSettings();
-    new import_obsidian.Notice("Локальное состояние синхронизации сброшено.");
-});
-});
-new import_obsidian.Setting(containerEl).setName("Файл логов").setDesc(`Плагин записывает подробный лог каждой синхронизации в файл ${LOG_FILE_NAME} в корне хранилища.`).addButton((button) => {
-button.setButtonText("Очистить лог").onClick(async () => {
-await this.plugin.logger.clear();
-});
-});
+  }
+
+  async ydDelete(absPath, permanently = false) {
+    const q = new URLSearchParams({ path: absPath, permanently: String(!!permanently) });
+    const url = `${API_BASE}/resources?${q.toString()}`;
+    await this.http('DELETE', url);
+  }
+
+  async ydMove(fromAbs, toAbs, overwrite = true) {
+    const q = new URLSearchParams({ from: fromAbs, path: toAbs, overwrite: String(!!overwrite) });
+    const url = `${API_BASE}/resources/move?${q.toString()}`;
+    await this.http('POST', url);
+  }
+
+  remoteAbs(rel) {
+    let base = this.getRemoteBase();
+    base = base.replace(/\/+$/, '');
+    if (base.startsWith('app:') || base.startsWith('disk:') || base.startsWith('trash:')) {
+      return `${base}/${normalizeRelPath(rel)}`;
+    }
+    if (!base.startsWith('/')) base = '/' + base;
+    return `${base}/${normalizeRelPath(rel)}`;
+  }
+
+  listLocalFilesInScope() {
+    const base = normalizeRelPath(this.settings.localBasePath || '');
+    const out = [];
+    const all = this.app.vault.getAllLoadedFiles();
+    for (const f of all) {
+      if (f instanceof TFolder) continue;
+      const rel = this.toLocalRel(f.path);
+      if (!this.inScope(rel)) continue;
+      if (this.matchesIgnore(rel)) continue;
+      const ext = getExt(rel);
+      if (this.settings.excludeExtensions.includes(ext)) continue;
+      const size = f.stat.size;
+      if (size > this.settings.maxSizeMB * 1024 * 1024) continue;
+      out.push({ rel, tfile: f, size, mtime: f.stat.mtime, ctime: f.stat.ctime, ext });
+    }
+    return out;
+  }
+
+  async buildPlan() {
+    const local = this.listLocalFilesInScope();
+    const remoteBase = this.getRemoteBase();
+    await this.ydEnsureFolder(remoteBase || '/');
+    const remote = await this.ydListFolderRecursive(remoteBase || '/');
+
+    const localMap = new Map(local.map((x) => [x.rel, x]));
+    const remoteMap = new Map(remote.map((x) => [x.rel, x]));
+    const plan = [];
+
+    const rels = new Set([...localMap.keys(), ...remoteMap.keys()]);
+    for (const rel of rels) {
+      const loc = localMap.get(rel);
+      const rem = remoteMap.get(rel);
+      const idx = this.index.files[rel];
+      const canUpload = this.settings.syncMode !== 'download';
+      const canDownload = this.settings.syncMode !== 'upload';
+
+      if (loc && !rem) {
+        if (canUpload) plan.push({ type: 'upload', rel, from: loc, toAbs: this.remoteAbs(rel) });
+        continue;
+      }
+      if (!loc && rem) {
+        if (canDownload) plan.push({ type: 'download', rel, fromAbs: rem.path, toRel: rel, remote: rem });
+        continue;
+      }
+      if (loc && rem) {
+        const localChanged = !idx || loc.mtime > (idx.localMtime || 0) || loc.size !== (idx.localSize || 0);
+        const remoteChanged = !idx || new Date(rem.modified).getTime() > (idx.remoteModified || 0) || rem.revision !== (idx.remoteRevision || rem.revision);
+
+        if (localChanged && !remoteChanged) {
+          if (canUpload) plan.push({ type: 'upload', rel, from: loc, toAbs: rem.path });
+        } else if (!localChanged && remoteChanged) {
+          if (canDownload) plan.push({ type: 'download', rel, fromAbs: rem.path, toRel: rel, remote: rem });
+        } else if (localChanged && remoteChanged) {
+          if ((this.settings.conflictStrategy || 'newest-wins') === 'duplicate-both') {
+            plan.push({ type: 'conflict', rel, from: loc, remote: rem });
+          } else {
+            const tolMs = Math.max(0, (this.settings.timeSkewToleranceSec || 0) * 1000);
+            const localTs = Number(loc.mtime) || 0;
+            const remoteTs = Number(new Date(rem.modified).getTime()) || 0;
+            if (canUpload && localTs > remoteTs + tolMs) {
+              plan.push({ type: 'upload', rel, from: loc, toAbs: rem.path });
+              this.logInfo(`Конфликт решён (новейшее): загрузка ${rel}`);
+            } else if (canDownload && remoteTs > localTs + tolMs) {
+              plan.push({ type: 'download', rel, fromAbs: rem.path, toRel: rel, remote: rem });
+              this.logInfo(`Конфликт решён (новейшее): скачивание ${rel}`);
+            } else {
+              if (canUpload) {
+                plan.push({ type: 'upload', rel, from: loc, toAbs: rem.path });
+                this.logInfo(`Конфликт в пределах допуска: выбрана локальная версия для ${rel}`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (this.settings.deletePolicy === 'mirror') {
+      for (const rel of Object.keys(this.index.files)) {
+        const existsLocal = localMap.has(rel);
+        const existsRemote = remoteMap.has(rel);
+        const idx = this.index.files[rel];
+        if (!existsLocal && existsRemote && this.settings.syncMode !== 'upload') {
+          const rem = remoteMap.get(rel);
+          if (rem) {
+            const remoteChanged = !idx || new Date(rem.modified).getTime() > (idx.remoteModified || 0) || rem.revision !== (idx.remoteRevision || rem.revision);
+            if (!remoteChanged) plan.push({ type: 'remote-delete', rel, abs: rem.path });
+          }
+        } else if (existsLocal && !existsRemote && this.settings.syncMode !== 'download') {
+          const loc = localMap.get(rel);
+          if (loc) {
+            const localChanged = !idx || loc.mtime > (idx.localMtime || 0) || loc.size !== (idx.localSize || 0);
+            if (!localChanged) plan.push({ type: 'local-delete', rel, tfile: loc.tfile });
+          }
+        }
+      }
+    }
+
+    const pri = (t) => (t === 'conflict' ? 3 : (t === 'upload' || t === 'download') ? 2 : 1);
+    const byRel = new Map();
+    for (const op of plan) {
+      const prev = byRel.get(op.rel);
+      if (!prev || pri(op.type) > pri(prev.type)) byRel.set(op.rel, op);
+    }
+    const finalPlan = Array.from(byRel.values());
+
+    return { plan: finalPlan, localMap, remoteMap };
+  }
+
+  async syncNow(dryRun = false) {
+    try {
+      if (!this.settings.accessToken) {
+        new Notice('Сначала подключите аккаунт в настройках.');
+        return;
+      }
+      this.logInfo(`Синхронизация запущена (предпросмотр=${dryRun})`);
+      this.startRun(dryRun, 0);
+      const { plan, localMap } = await this.buildPlan();
+      this.setRunPlan(plan);
+      if (dryRun) {
+        const lines = plan.map((op) => {
+          try {
+            switch (op.type) {
+              case 'upload': return `загрузить ${op.rel} -> ${op.toAbs}`;
+              case 'download': return `скачать ${op.rel} <- ${op.fromAbs}`;
+              case 'conflict': return `конфликт ${op.rel}`;
+              case 'remote-delete': return `удалить удалённо ${op.rel} (${op.abs})`;
+              case 'local-delete': return `удалить локально ${op.rel}`;
+              default: return JSON.stringify(op, (k, v) => (k === 'tfile' ? (v?.path || '[tfile]') : v));
+            }
+          } catch (_) { return `[непечатаемая операция ${op?.type || 'unknown'} ${op?.rel || ''}]`; }
+        });
+        const txt = lines.join('\n');
+        this.logInfo(`План (${plan.length} операций) построен`);
+        new DiagnosticsModal(this.app, `План синхронизации (${plan.length} операций)\n\n${txt}`).open();
+        this.finishRun(true);
+        return;
+      }
+      await this.executePlan(plan, localMap);
+      this.index.lastSyncAt = nowIso();
+      await this.saveSettings();
+      new Notice('Синхронизация завершена');
+      this.finishRun(true);
+    } catch (e) {
+      this.logError(`Синхронизация провалена: ${e?.message || e}`);
+      new Notice(`Синхронизация провалена: ${e?.message || String(e)}`);
+      this.finishRun(false);
+    }
+  }
+
+  async executePlan(plan, localMap) {
+    const uploads = plan.filter((x) => x.type === 'upload');
+    const downloads = plan.filter((x) => x.type === 'download');
+    const conflicts = plan.filter((x) => x.type === 'conflict');
+    const rDeletes = plan.filter((x) => x.type === 'remote-delete');
+    const lDeletes = plan.filter((x) => x.type === 'local-delete');
+
+    await this.runWithConcurrency(uploads, this.settings.uploadConcurrency, async (op) => {
+      await this.uploadLocalFile(op.rel, op.from.tfile, op.toAbs);
+    });
+    await this.runWithConcurrency(downloads, this.settings.downloadConcurrency, async (op) => {
+      await this.downloadRemoteFile(op.fromAbs, op.toRel);
+    });
+
+    for (const op of conflicts) {
+      if (this.currentRun?.canceled) break;
+      this.reportOpStart(op);
+      try {
+        await this.resolveConflictByDuplication(op.rel, op.from?.tfile, op.remote);
+        this.reportOpEnd(op, true);
+      } catch (e) {
+        const msg = e?.message || String(e);
+        this.logWarn(`Ошибка (конфликт ${op.rel}): ${msg}`);
+        this.reportOpEnd(op, false, msg);
+      }
+    }
+
+    for (const op of rDeletes) {
+      if (this.currentRun?.canceled) break;
+      this.reportOpStart(op);
+      try { await this.ydDelete(op.abs, false); this.reportOpEnd(op, true); }
+      catch (e) { const msg = e?.message || String(e); this.logWarn(`Ошибка удаления (удалённо) ${op.abs}: ${msg}`); this.reportOpEnd(op, false, msg); }
+    }
+    for (const op of lDeletes) {
+      if (this.currentRun?.canceled) break;
+      this.reportOpStart(op);
+      try { await this.app.vault.delete(op.tfile); this.reportOpEnd(op, true); }
+      catch (e) { const msg = e?.message || String(e); this.logWarn(`Ошибка удаления (локально) ${op.tfile?.path}: ${msg}`); this.reportOpEnd(op, false, msg); }
+    }
+
+    const localAfter = this.listLocalFilesInScope();
+    const remoteAfter = await this.ydListFolderRecursive(this.settings.remoteBasePath || '/');
+    const remoteMap = new Map(remoteAfter.map((x) => [x.rel, x]));
+    const newIndex = {};
+    for (const loc of localAfter) {
+      const rem = remoteMap.get(loc.rel);
+      newIndex[loc.rel] = {
+        localMtime: loc.mtime,
+        localSize: loc.size,
+        remoteModified: rem ? new Date(rem.modified).getTime() : 0,
+        remoteRevision: rem ? rem.revision : undefined,
+      };
+    }
+    this.index.files = newIndex;
+    await this.saveSettings();
+  }
+
+  async runWithConcurrency(items, limit, task) {
+    let i = 0;
+    const workers = Array.from({ length: Math.max(1, limit | 0) }, async () => {
+      while (true) {
+        const idx = i++;
+        if (idx >= items.length) return;
+        const it = items[idx];
+        if (this.currentRun?.canceled) return;
+        try {
+          this.reportOpStart(it);
+          await task(it);
+          this.reportOpEnd(it, true);
+        } catch (e) {
+          const ctx = `${it?.type || 'task'}${it?.rel ? ` ${it.rel}` : ''}` + (it?.toAbs ? ` -> ${it.toAbs}` : '') + (it?.fromAbs ? ` <- ${it.fromAbs}` : '');
+          const msg = e?.message || String(e);
+          this.logWarn(`Ошибка задачи (${ctx}): ${msg}`);
+          this.reportOpEnd(it, false, msg);
+        }
+      }
+    });
+    await Promise.all(workers);
+  }
+
+  async uploadLocalFile(rel, tfile, toAbs) {
+    const lastSlash = toAbs.lastIndexOf('/');
+    if (lastSlash > 0) {
+      const parent = toAbs.slice(0, lastSlash) || toAbs;
+      await this.ydEnsureFolder(parent).catch(() => {});
+    }
+    const href = await this.ydGetUploadHref(toAbs, true);
+    const data = await this.app.vault.readBinary(tfile);
+    await this.http('PUT', href, { body: data, contentType: 'application/octet-stream' });
+    this.logInfo(`Загружено: ${rel}`);
+  }
+
+  async downloadRemoteFile(fromAbs, toRel) {
+    const href = await this.ydGetDownloadHref(fromAbs);
+    const bin = await this.http('GET', href, {}, true);
+    const targetPath = this.fromLocalRel(toRel);
+    const existing = this.app.vault.getAbstractFileByPath(targetPath);
+    if (existing && existing instanceof TFile) {
+      await this.app.vault.modifyBinary(existing, bin);
+    } else if (existing && existing instanceof TFolder) {
+      const filename = toRel.split('/').pop();
+      await this.app.vault.createBinary(pathJoin(targetPath, filename), bin);
+    } else {
+      await this.ensureFolderForPath(targetPath);
+      await this.app.vault.createBinary(targetPath, bin);
+    }
+    this.logInfo(`Скачано: ${toRel}`);
+  }
+
+  async ensureFolderForPath(path) {
+    const parts = path.split('/');
+    parts.pop();
+    let cur = '';
+    for (const p of parts) {
+      cur = pathJoin(cur, p);
+      if (!cur) continue;
+      const f = this.app.vault.getAbstractFileByPath(cur);
+      if (!f) await this.app.vault.createFolder(cur);
+    }
+  }
+
+  async resolveConflictByDuplication(rel, localTFile, remoteMeta) {
+    const ts = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+    const ext = getExt(rel);
+    const base = ext ? rel.slice(0, -(ext.length + 1)) : rel;
+    const suffixLocal = ` (конфликт ${ts} локально)`;
+    const suffixRemote = ` (конфликт ${ts} удалённо)`;
+    const conflictLocal = `${base}${suffixLocal}${ext ? '.' + ext : ''}`;
+    const conflictRemote = `${base}${suffixRemote}${ext ? '.' + ext : ''}`;
+
+    const remoteHref = await this.ydGetDownloadHref(remoteMeta.path);
+    const remoteBuf = await this.http('GET', remoteHref, {}, true);
+    const localIsBinary = !(getExt(rel).toLowerCase() === 'md');
+
+    const localConflictPath = this.fromLocalRel(conflictLocal);
+    const remoteConflictPath = this.fromLocalRel(conflictRemote);
+    await this.ensureFolderForPath(localConflictPath);
+    await this.ensureFolderForPath(remoteConflictPath);
+
+    if (localIsBinary) {
+      const localBuf = await this.app.vault.readBinary(localTFile).catch(() => new Uint8Array());
+      await this.app.vault.createBinary(localConflictPath, localBuf).catch(async () => {
+        const f = this.app.vault.getAbstractFileByPath(localConflictPath);
+        if (f) await this.app.vault.modifyBinary(f, localBuf);
+      });
+      await this.app.vault.createBinary(remoteConflictPath, remoteBuf).catch(async () => {
+        const f = this.app.vault.getAbstractFileByPath(remoteConflictPath);
+        if (f) await this.app.vault.modifyBinary(f, remoteBuf);
+      });
+    } else {
+      let remoteText = '';
+      try { remoteText = new TextDecoder('utf-8').decode(remoteBuf); } catch { remoteText = ''; }
+      let localText = '';
+      try { localText = await this.app.vault.read(localTFile); } catch { localText = ''; }
+      await this.app.vault.create(localConflictPath, localText).catch(async () => {
+        const f = this.app.vault.getAbstractFileByPath(localConflictPath);
+        if (f) await this.app.vault.modify(f, localText);
+      });
+      await this.app.vault.create(remoteConflictPath, remoteText).catch(async () => {
+        const f = this.app.vault.getAbstractFileByPath(remoteConflictPath);
+        if (f) await this.app.vault.modify(f, remoteText);
+      });
+    }
+    this.logWarn(`Конфликт -> созданы дубликаты: ${conflictLocal}, ${conflictRemote}`);
+  }
 }
-};
+
+module.exports = YandexDiskSyncPlugin;
+
+// --- КОНЕЦ ФАЙЛА main.js ---
