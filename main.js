@@ -31,7 +31,7 @@ const I18N = {
   },
   ru: {
     'desc.clientId': 'ID клиента Яндекс OAuth (нужен для подключения)',
-    'desc.accessToken': 'Вставьте токен вручную или используйте кнопку "Подключить". Токен хранится в данных плагина.',
+    'desc.accessToken': 'Вставьте токен вручную или используйте кнопку "Подключить". Токен хранится в данных плhttps://github.com/FIKSSATOM/obsidian-yandex-sync/tree/mainаагина.',
     'desc.oauthControls': 'Подключить: открыть OAuth в браузере и вставить токен; Отключить: удалить локально сохранённый токен; Управлять на Яндексе: открыть портал OAuth для управления приложением/токенами.',
     'desc.oauthBaseUrl': 'Используется для авторизации и ссылок на портал Яндекса',
     'desc.oauthScopes': 'Оставьте пустым, чтобы использовать права, настроенные у вашего приложения. Для режима «папка приложения» это поле должно быть пустым, иначе возникнет ошибка invalid_scope.',
@@ -530,7 +530,7 @@ class YandexDiskSyncSettingTab extends PluginSettingTab {
       .addButton((b) => b.setCta().setButtonText('Синхронизировать').onClick(() => this.plugin.syncNow(false)));
 
     new Setting(containerEl)
-      .setName('Предпросмотр')
+      .setName('лог')
       .setDesc(this.plugin.t('desc.dryRun'))
       .addButton((b) => b.setButtonText('Показать план').onClick(() => this.plugin.syncNow(true)));
 
