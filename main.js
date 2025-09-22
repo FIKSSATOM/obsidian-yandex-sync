@@ -31,11 +31,11 @@ const I18N = {
   },
   ru: {
     'desc.clientId': 'ID клиента Яндекс OAuth (нужен для подключения)',
-    'desc.accessToken': 'Вставьте токен вручную или используйте кнопку "Подключить". Токен хранится в данных плhttps://github.com/FIKSSATOM/obsidian-yandex-sync/tree/mainаагина.',
+    'desc.accessToken': 'Вставьте токен вручную или используйте кнопку "Подключить". Токен хранится в данных плагина.',
     'desc.oauthControls': 'Подключить: открыть OAuth в браузере и вставить токен; Отключить: удалить локально сохранённый токен; Управлять на Яндексе: открыть портал OAuth для управления приложением/токенами.',
     'desc.oauthBaseUrl': 'Используется для авторизации и ссылок на портал Яндекса',
     'desc.oauthScopes': 'Оставьте пустым, чтобы использовать права, настроенные у вашего приложения. Для режима «папка приложения» это поле должно быть пустым, иначе возникнет ошибка invalid_scope.',
-    'desc.remoteBase': "Корневая папка на Яндекс.Диске. Для токенов с доступом к папке приложения используйте 'app:/' (рекомендуется). Хранилище будет синхронизироваться в подпапку внутри этого пути.",
+    'desc.remoteBase': "Корневая папка на Яндекс.Диске. Для полного доступа используйте 'disk:/Имя_Папки'. Для папки приложения оставьте 'app:/'. Хранилище будет синхронизироваться в подпапку внутри этого пути.",
     'desc.vaultFolderName': 'Подпапка внутри удалённой базы для этого хранилища (только имя папки). По умолчанию — имя текущего хранилища.',
     'desc.localScope': 'Относительный путь внутри хранилища для синхронизации (пусто = всё хранилище)',
     'desc.ignorePatterns': 'Список шаблонов через запятую (например, .obsidian/**, **/.trash/**)',
@@ -370,6 +370,21 @@ class YandexDiskSyncSettingTab extends PluginSettingTab {
       
     containerEl.createEl('h3', { text: 'Настройки Синхронизации' });
 
+    // *** НАЧАЛО ИЗМЕНЕНИЯ ***
+    new Setting(containerEl)
+      .setName('Удалённый базовый путь')
+      .setDesc(this.plugin.t('desc.remoteBase'))
+      .addText((txt) =>
+        txt
+          .setPlaceholder(DEFAULT_SETTINGS.remoteBasePath)
+          .setValue(this.plugin.settings.remoteBasePath)
+          .onChange(async (v) => {
+            this.plugin.settings.remoteBasePath = (v || '').trim() || DEFAULT_SETTINGS.remoteBasePath;
+            await this.plugin.saveSettings();
+          }),
+      );
+    // *** КОНЕЦ ИЗМЕНЕНИЯ ***
+
     new Setting(containerEl)
       .setName('Шаблоны игнорирования')
       .setDesc(this.plugin.t('desc.ignorePatterns'))
@@ -530,7 +545,7 @@ class YandexDiskSyncSettingTab extends PluginSettingTab {
       .addButton((b) => b.setCta().setButtonText('Синхронизировать').onClick(() => this.plugin.syncNow(false)));
 
     new Setting(containerEl)
-      .setName('лог')
+      .setName('Предпросмотр')
       .setDesc(this.plugin.t('desc.dryRun'))
       .addButton((b) => b.setButtonText('Показать план').onClick(() => this.plugin.syncNow(true)));
 
