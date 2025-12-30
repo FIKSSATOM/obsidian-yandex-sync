@@ -1187,6 +1187,7 @@ class YandexDiskSyncPlugin extends Plugin {
     const plan = [];
 
     const rels = new Set([...localMap.keys(), ...remoteMap.keys()]);
+    
     for (const rel of rels) {
       const loc = localMap.get(rel);
       const rem = remoteMap.get(rel);
@@ -1194,14 +1195,35 @@ class YandexDiskSyncPlugin extends Plugin {
       const canUpload = this.settings.syncMode !== 'download';
       const canDownload = this.settings.syncMode !== 'upload';
 
+      // СЛУЧАЙ 1: Файл есть локально, но нет в облаке
       if (loc && !rem) {
-        if (canUpload) plan.push({ type: 'upload', rel, from: loc, toAbs: this.remoteAbs(rel) });
+        if (idx) {
+          // Файл был в индексе, значит он удален в облаке
+          if (this.settings.deletePolicy === 'mirror' && canDownload) {
+            plan.push({ type: 'local-delete', rel, tfile: loc.tfile });
+          }
+        } else {
+          // Файла не было в индексе, значит это новый локальный файл
+          if (canUpload) plan.push({ type: 'upload', rel, from: loc, toAbs: this.remoteAbs(rel) });
+        }
         continue;
       }
+
+      // СЛУЧАЙ 2: Файл есть в облаке, но нет локально
       if (!loc && rem) {
-        if (canDownload) plan.push({ type: 'download', rel, fromAbs: rem.path, toRel: rel, remote: rem });
+        if (idx) {
+          // Файл был в индексе, значит он удален локально
+          if (this.settings.deletePolicy === 'mirror' && canUpload) {
+            plan.push({ type: 'remote-delete', rel, abs: rem.path });
+          }
+        } else {
+          // Файла не было в индексе, значит это новый файл в облаке
+          if (canDownload) plan.push({ type: 'download', rel, fromAbs: rem.path, toRel: rel, remote: rem });
+        }
         continue;
       }
+
+      // СЛУЧАЙ 3: Файл есть и там, и там (проверка изменений)
       if (loc && rem) {
         const localChanged = !idx || loc.mtime > (idx.localMtime || 0) || loc.size !== (idx.localSize || 0);
         const remoteChanged = !idx || new Date(rem.modified).getTime() > (idx.remoteModified || 0) || rem.revision !== (idx.remoteRevision || rem.revision);
@@ -1211,50 +1233,27 @@ class YandexDiskSyncPlugin extends Plugin {
         } else if (!localChanged && remoteChanged) {
           if (canDownload) plan.push({ type: 'download', rel, fromAbs: rem.path, toRel: rel, remote: rem });
         } else if (localChanged && remoteChanged) {
+          // Конфликт
           if ((this.settings.conflictStrategy || 'newest-wins') === 'duplicate-both') {
             plan.push({ type: 'conflict', rel, from: loc, remote: rem });
           } else {
             const tolMs = Math.max(0, (this.settings.timeSkewToleranceSec || 0) * 1000);
             const localTs = Number(loc.mtime) || 0;
             const remoteTs = Number(new Date(rem.modified).getTime()) || 0;
+            
             if (canUpload && localTs > remoteTs + tolMs) {
               plan.push({ type: 'upload', rel, from: loc, toAbs: rem.path });
-              this.logInfo(`Конфликт решён (новейшее): загрузка ${rel}`);
             } else if (canDownload && remoteTs > localTs + tolMs) {
               plan.push({ type: 'download', rel, fromAbs: rem.path, toRel: rel, remote: rem });
-              this.logInfo(`Конфликт решён (новейшее): скачивание ${rel}`);
-            } else {
-              if (canUpload) {
-                plan.push({ type: 'upload', rel, from: loc, toAbs: rem.path });
-                this.logInfo(`Конфликт в пределах допуска: выбрана локальная версия для ${rel}`);
-              }
+            } else if (canUpload) {
+              plan.push({ type: 'upload', rel, from: loc, toAbs: rem.path });
             }
           }
         }
       }
     }
 
-    if (this.settings.deletePolicy === 'mirror') {
-      for (const rel of Object.keys(this.index.files)) {
-        const existsLocal = localMap.has(rel);
-        const existsRemote = remoteMap.has(rel);
-        const idx = this.index.files[rel];
-        if (!existsLocal && existsRemote && this.settings.syncMode !== 'upload') {
-          const rem = remoteMap.get(rel);
-          if (rem) {
-            const remoteChanged = !idx || new Date(rem.modified).getTime() > (idx.remoteModified || 0) || rem.revision !== (idx.remoteRevision || rem.revision);
-            if (!remoteChanged) plan.push({ type: 'remote-delete', rel, abs: rem.path });
-          }
-        } else if (existsLocal && !existsRemote && this.settings.syncMode !== 'download') {
-          const loc = localMap.get(rel);
-          if (loc) {
-            const localChanged = !idx || loc.mtime > (idx.localMtime || 0) || loc.size !== (idx.localSize || 0);
-            if (!localChanged) plan.push({ type: 'local-delete', rel, tfile: loc.tfile });
-          }
-        }
-      }
-    }
-
+    // Фильтрация плана (оставляем только одну операцию на один путь с высшим приоритетом)
     const pri = (t) => (t === 'conflict' ? 3 : (t === 'upload' || t === 'download') ? 2 : 1);
     const byRel = new Map();
     for (const op of plan) {
@@ -1265,7 +1264,6 @@ class YandexDiskSyncPlugin extends Plugin {
 
     return { plan: finalPlan, localMap, remoteMap };
   }
-
   async syncNow(dryRun = false) {
     try {
       if (!this.settings.accessToken) {
